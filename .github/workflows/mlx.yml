@@ -1,0 +1,71 @@
+name: MLX
+
+# Guards the MLX path that the default CI (swift build/test) can't:
+#   - `swift build` already compiles the MLX adapter + MLX C++ (Swift-API breaks are caught
+#     there), but it does NOT compile the Metal shaders.
+#   - This job builds via xcodebuild, which compiles MLX C++ *and* the Metal shaders,
+#     catching mlx-swift Metal/toolchain/macro breaks. No GPU needed (compiling ≠ running).
+#   - Real on-device inference can't run on GitHub-hosted macOS runners (no Metal GPU in the
+#     VM). The opt-in integration tests (RUN_MLX_INTEGRATION=1) are for a self-hosted GPU
+#     runner or a local Mac — see the commented job below.
+#
+# Gated to MLX-relevant changes + weekly + manual, so it doesn't slow every PR.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 8 * * 1" # Mondays 08:00 UTC
+  pull_request:
+    paths:
+      - "Sources/AICoScientistMLX/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - "ios/**"
+      - "project.yml"
+      - ".github/workflows/mlx.yml"
+  push:
+    branches: [main]
+    paths:
+      - "Sources/AICoScientistMLX/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - ".github/workflows/mlx.yml"
+
+jobs:
+  metal-build:
+    name: Metal/xcodebuild compile guard (macOS)
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+      - name: Swift version
+        run: swift --version
+      - name: Ensure Metal toolchain
+        # Idempotent; no-op if already present. Tolerant: older runners bundle it and may not
+        # support the separate component download.
+        run: xcodebuild -downloadComponent MetalToolchain 2>/dev/null || echo "Metal toolchain already present or not separately downloadable"
+      - name: Build via xcodebuild (compiles MLX C++ + Metal shaders)
+        run: |
+          xcodebuild -scheme aicoscientist \
+            -destination 'platform=macOS' \
+            -derivedDataPath .xcbuild \
+            -skipMacroValidation \
+            build
+      - name: Verify metallib was produced
+        run: |
+          test -f .xcbuild/Build/Products/Debug/mlx-swift_Cmlx.bundle/Contents/Resources/default.metallib \
+            && echo "✅ Metal shaders compiled" \
+            || (echo "❌ metallib missing" && exit 1)
+
+  # Runtime inference guard (model load + generate). Requires a Metal GPU, which GitHub-hosted
+  # runners lack — enable on a self-hosted Apple Silicon runner labelled [self-hosted, macОS, gpu]:
+  #
+  # runtime-integration:
+  #   runs-on: [self-hosted, macOS, gpu]
+  #   steps:
+  #     - uses: actions/checkout@v5
+  #     - name: Integration tests (real model)
+  #       env:
+  #         RUN_MLX_INTEGRATION: "1"
+  #       run: |
+  #         xcodebuild test -scheme coscientist-mlx-Package \
+  #           -destination 'platform=macOS' -skipMacroValidation -derivedDataPath .xcbuild
