@@ -165,6 +165,17 @@ cancellation (a CLI Ctrl-C or app "stop" cleanly tears down in-flight work).
 State persistence: `Codable` snapshot of hypotheses + metrics to JSON (resumable runs),
 replacing the swarms per-agent state blobs.
 
+**Status (M4, landed).** `CoScientistEngine` is an `actor` that runs the full pipeline and
+**never throws** — per-phase failures are recorded in `WorkflowResult.errors` and the run
+continues (mirroring the reference's catch-all, but granular). It depends only on
+`SchemaConstrainedDecoding`, so it runs on MLX in production and on a scripted mock in tests
+(a complete workflow is unit-tested deterministically, no model). Tournament pairing uses an
+injected seeded PRNG (`SeededGenerator`) for reproducibility; Elo (k=24) is the
+authoritative final ranking, initial order is by review score. Reflection/evolution are
+sequential for now (correctness first); `TaskGroup` batching is M7. Embedding-based
+proximity replaces the LLM proximity agent in M5. Runnable via `aicoscientist "<goal>" --run`.
+Persistence (`save/loadState`) is not yet implemented — tracked for a later milestone.
+
 ---
 
 ## 6. Where the Swift/MLX version is *superior*

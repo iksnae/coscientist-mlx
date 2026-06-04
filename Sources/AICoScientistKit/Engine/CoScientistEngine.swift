@@ -1,0 +1,205 @@
+import Foundation
+
+/// Orchestrates the co-scientist workflow, mirroring the Python `run_research_workflow`:
+///
+///   generation → reflection → ranking → tournament
+///   then for maxIterations: meta-review → evolution(top-k) → reflection → ranking
+///                           → tournament → proximity
+///
+/// An `actor` holding the hypothesis pool and metrics. It depends only on protocols
+/// (`SchemaConstrainedDecoding`) — so it runs on the MLX backend in production and on a
+/// mock in tests, unchanged. Like the reference, it never throws: per-phase failures are
+/// recorded in `WorkflowResult.errors` and the workflow continues.
+public actor CoScientistEngine {
+    private let decoder: any SchemaConstrainedDecoding
+    private let config: EngineConfiguration
+    private var rng: SeededGenerator
+
+    private var hypotheses: [Hypothesis] = []
+    private var metrics = ExecutionMetrics()
+    private var clusters: [SimilarityCluster] = []
+    private var errors: [String] = []
+
+    public init(
+        decoder: any SchemaConstrainedDecoding,
+        config: EngineConfiguration = .init(),
+        seed: UInt64? = nil
+    ) {
+        self.decoder = decoder
+        self.config = config
+        self.rng = SeededGenerator(seed: seed ?? UInt64.random(in: .min ... .max))
+    }
+
+    /// Run the full workflow for a research goal. Always returns a result.
+    public func run(researchGoal goal: String) async -> WorkflowResult {
+        let clock = ContinuousClock()
+        let start = clock.now
+        reset()
+
+        await generationPhase(goal: goal)
+        await reflectionPhase(goal: goal)
+        rankingPhase()
+        await tournamentPhase(goal: goal)
+
+        var metaSummary = ""
+        for _ in 0..<max(0, config.maxIterations) {
+            let meta = await metaReviewPhase()
+            if let meta { metaSummary = meta.metaReviewSummary }
+            await evolutionPhase(meta: meta)
+            await reflectionPhase(goal: goal)
+            rankingPhase()
+            await tournamentPhase(goal: goal)
+            await proximityPhase()
+        }
+
+        let ranked = hypotheses.sorted { $0.eloRating > $1.eloRating }
+        metrics.agentExecutionTimes["total"] = seconds(since: start, clock: clock)
+
+        return WorkflowResult(
+            topRankedHypotheses: Array(ranked.prefix(10)),
+            metaReviewSummary: metaSummary,
+            clusters: clusters,
+            metrics: metrics,
+            totalWorkflowTime: seconds(since: start, clock: clock),
+            errors: errors
+        )
+    }
+
+    // MARK: - Phases
+
+    private func generationPhase(goal: String) async {
+        do {
+            let out = try await GenerationAgent().run(
+                .init(researchGoal: goal, count: config.hypothesesPerGeneration), using: decoder)
+            hypotheses = out.hypotheses.map { Hypothesis(text: $0.text) }
+            metrics.hypothesisCount = hypotheses.count
+        } catch {
+            errors.append("generation: \(error)")
+        }
+    }
+
+    private func reflectionPhase(goal: String) async {
+        let agent = ReflectionAgent()
+        for i in hypotheses.indices {
+            do {
+                let review = try await agent.run(
+                    .init(researchGoal: goal, hypothesisText: hypotheses[i].text), using: decoder)
+                hypotheses[i].reviews.append(review)
+                hypotheses[i].score = review.scores.overall
+                metrics.reviewsCount += 1
+            } catch {
+                errors.append("reflection[\(i)]: \(error)")
+            }
+        }
+    }
+
+    /// Initial ordering by review score (deterministic). Elo from the tournament is the
+    /// authoritative final ranking. The `RankingAgent` is available for callers who want
+    /// narrative rankings; the engine sorts numerically to avoid fragile text matching.
+    private func rankingPhase() {
+        hypotheses.sort { $0.score > $1.score }
+    }
+
+    private func tournamentPhase(goal: String) async {
+        guard hypotheses.count >= 2 else { return }
+        let agent = TournamentAgent()
+        let rounds = hypotheses.count * 3
+        for _ in 0..<rounds {
+            let (i, j) = pickTwoDistinct(in: hypotheses.count)
+            do {
+                let verdict = try await agent.run(
+                    .init(researchGoal: goal,
+                          hypothesisA: hypotheses[i].text,
+                          hypothesisB: hypotheses[j].text),
+                    using: decoder)
+                let aWon = verdict.winner == .a
+                let oldI = hypotheses[i].eloRating
+                let oldJ = hypotheses[j].eloRating
+                hypotheses[i].updateElo(opponentElo: oldJ, didWin: aWon, kFactor: 24)
+                hypotheses[j].updateElo(opponentElo: oldI, didWin: !aWon, kFactor: 24)
+                metrics.tournamentsCount += 1
+            } catch {
+                errors.append("tournament: \(error)")
+            }
+        }
+        hypotheses.sort { $0.eloRating > $1.eloRating }
+    }
+
+    private func metaReviewPhase() async -> MetaReview? {
+        let digest = hypotheses
+            .compactMap { h in h.reviews.last.map { "- \(h.text): \($0.reviewSummary)" } }
+            .joined(separator: "\n")
+        do {
+            return try await MetaReviewAgent().run(.init(reviewsDigest: digest), using: decoder)
+        } catch {
+            errors.append("meta-review: \(error)")
+            return nil
+        }
+    }
+
+    private func evolutionPhase(meta: MetaReview?) async {
+        let topK = Array(hypotheses.prefix(max(0, config.evolutionTopK)))
+        guard !topK.isEmpty else { return }
+        let agent = EvolutionAgent()
+        var evolved: [Hypothesis] = []
+        for h in topK {
+            let feedback = h.reviews.last.map {
+                ($0.weaknesses + $0.suggestions).joined(separator: "; ")
+            } ?? ""
+            do {
+                let out = try await agent.run(
+                    .init(originalText: h.text,
+                          reviewFeedback: feedback,
+                          metaReviewInsights: meta?.metaReviewSummary ?? ""),
+                    using: decoder)
+                var refined = Hypothesis(text: out.refinedText)
+                refined.evolutionHistory = h.evolutionHistory + [h.text]
+                evolved.append(refined)
+                metrics.evolutionsCount += 1
+            } catch {
+                errors.append("evolution: \(error)")
+                evolved.append(h)  // keep the original on failure
+            }
+        }
+        hypotheses = evolved
+    }
+
+    private func proximityPhase() async {
+        guard !hypotheses.isEmpty else { return }
+        do {
+            let out = try await ProximityAgent().run(
+                .init(hypotheses: hypotheses.map(\.text)), using: decoder)
+            clusters = out.clusters.map { cluster in
+                var memberIDs: [UUID] = []
+                for index in cluster.memberIndices where hypotheses.indices.contains(index) {
+                    hypotheses[index].similarityClusterID = cluster.clusterID
+                    memberIDs.append(hypotheses[index].id)
+                }
+                return SimilarityCluster(clusterID: cluster.clusterID, memberIDs: memberIDs)
+            }
+        } catch {
+            errors.append("proximity: \(error)")
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func reset() {
+        hypotheses = []
+        metrics = ExecutionMetrics()
+        clusters = []
+        errors = []
+    }
+
+    private func pickTwoDistinct(in count: Int) -> (Int, Int) {
+        let i = Int.random(in: 0..<count, using: &rng)
+        var j = Int.random(in: 0..<count, using: &rng)
+        while j == i { j = Int.random(in: 0..<count, using: &rng) }
+        return (i, j)
+    }
+
+    private func seconds(since start: ContinuousClock.Instant, clock: ContinuousClock) -> TimeInterval {
+        let d = clock.now - start
+        return Double(d.components.seconds) + Double(d.components.attoseconds) / 1e18
+    }
+}
