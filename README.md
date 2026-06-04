@@ -9,8 +9,9 @@ Silicon**, fully offline.
 > (`MLXLanguageModel`, local models on Apple Silicon) + M2 schema-driven decoding
 > (typed `JSONSchema` per agent output, prompt injection, validation, repair-retry). The
 > agent engine lands in M4. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full
-> design and milestones, and [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey
-> and tiered recommendations.
+> design and milestones, [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey
+> and tiered recommendations, and [`docs/IOS.md`](docs/IOS.md) for on-device iPhone/iPad
+> enablement.
 
 ## Why a port
 

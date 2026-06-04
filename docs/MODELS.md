@@ -4,6 +4,7 @@
 > registry that lands with inference (M1) and structured decoding (M2). Repo ids marked
 > ⚠️ are *inferred from collections, not yet confirmed on Hugging Face* — verify before
 > pinning in code. See [`ARCHITECTURE.md`](ARCHITECTURE.md) §3 (inference), §6 (proximity).
+> For the **on-device iPhone/iPad** subset and constraints, see [`IOS.md`](IOS.md).
 
 ## TL;DR
 
