@@ -10,7 +10,7 @@ Apple Foundation Models backend
 
 ## Status
 
-In progress
+Complete
 
 ## Duration And Usage Tracking
 
@@ -18,8 +18,8 @@ In progress
 | --- | --- |
 | Planned start | 2026-06-04 |
 | Actual start | 2026-06-04 |
-| Actual end | TBD |
-| Elapsed | TBD |
+| Actual end | 2026-06-04 |
+| Elapsed | same day |
 | Scope class | Small |
 | Confidence | Medium |
 
@@ -27,22 +27,22 @@ In progress
 
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
-| Package builds with the framework present; gated code compiles out where `canImport(FoundationModels)` is false. | Pending | Track B |
-| `InferenceBackend.resolve` returns `.foundation` only when available, `.mlx` otherwise. | Pending | Track A |
-| `FoundationModelsBackend.makeModel()` returns nil when unavailable / a model when available; consistent with `isAvailable`. | Pending | Track B |
-| `--backend foundation` uses FM where available, else clear fallback to MLX; `--backend mlx` default unchanged. | Pending | Track C |
-| MLX remains the default; no path makes Foundation Models required. | Pending | Track A/C |
-| New behaviour is driven by a test written first (mock backend, no GPU). | Pending | all tracks |
-| `import MLX*` adapter-only; `import FoundationModels` only under its target. | Pending | `git grep` check |
+| Package builds with the framework present; gated code compiles out where `canImport(FoundationModels)` is false. | Done | `#if canImport`/`@available` gates (958e60d); `swift build` clean on macOS 26. |
+| `InferenceBackend.resolve` returns `.foundation` only when available, `.mlx` otherwise. | Done | `InferenceBackendTests.resolve` (41184af) |
+| `FoundationModelsBackend.makeModel()` returns nil when unavailable / a model when available; consistent with `isAvailable`. | Done | `FoundationModelsBackendTests.consistency` (958e60d) |
+| `--backend foundation` uses FM where available, else clear fallback to MLX; `--backend mlx` default unchanged. | Done | CLI `loadGenerator` (034419c); `--help` shows values mlx, foundation |
+| MLX remains the default; no path makes Foundation Models required. | Done | Default `.mlx`; resolver falls back to `.mlx`. |
+| New behaviour is driven by a test written first (mock backend, no GPU). | Done | `InferenceBackendTests`, `FoundationModelsBackendTests` first. |
+| `import MLX*` adapter-only; `import FoundationModels` only under its target. | Done | `git grep` → only `Package.swift` comments outside the two adapters. |
 
 ## Validation Log
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `swift build` | Pending | — |
-| `swift test` | Pending | — |
-| macOS app build | Pending | — |
-| `git diff --check` | Pending | — |
+| `swift build` | Passed | Clean on macOS 26 (FM framework present). |
+| `swift test` | Passed | 134 tests / 30 suites green (+3). |
+| macOS app build | Passed | `xcodebuild … CoScientistDemo` BUILD SUCCEEDED. |
+| `git diff --check` | Passed | Whitespace clean. |
 
 ## Decisions
 
