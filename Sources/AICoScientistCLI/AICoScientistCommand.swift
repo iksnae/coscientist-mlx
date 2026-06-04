@@ -39,6 +39,9 @@ struct AICoScientistCommand: AsyncParsableCommand {
     @Flag(help: "List the curated model catalog and exit.")
     var listModels = false
 
+    @Flag(help: "Ground generation + reflection with research tools (arXiv, PubMed; web search when TAVILY_API_KEY is set).")
+    var tools = false
+
     @Option(help: "Resume a saved run (JSON path): continue refinement, skipping generation.")
     var resumePath: String?
 
@@ -75,6 +78,16 @@ struct AICoScientistCommand: AsyncParsableCommand {
             + ModelCatalog.trustedOrgs.sorted().joined(separator: ", "))
     }
 
+    /// The research tools available to grounded agents: arXiv + PubMed (free), plus web
+    /// search when a Tavily key is in the environment.
+    private static func researchRegistry() -> ToolRegistry {
+        var tools: [any AgentTool] = [ArxivSearchTool(), PubMedSearchTool()]
+        if let key = ProcessInfo.processInfo.environment["TAVILY_API_KEY"], !key.isEmpty {
+            tools.append(WebSearchTool(apiKey: key))
+        }
+        return ToolRegistry(tools)
+    }
+
     private func runProbe() async throws {
         print("Loading local model (first run downloads from Hugging Face)…")
         let llm = try await MLXLanguageModel.load(modelKey ?? ModelCatalog.defaultGeneratorKey)
@@ -93,17 +106,32 @@ struct AICoScientistCommand: AsyncParsableCommand {
         let decodeMetrics = DecodeMetrics()
         let localDecoder = SchemaConstrainedDecoder(model: llm, metrics: decodeMetrics)
 
-        let router: any DecoderRouting
+        var overrides: [AgentRole: any SchemaConstrainedDecoding] = [:]
         if let remoteJudge {
             let remoteDecoder = SchemaConstrainedDecoder(
                 model: RemoteLanguageModel(model: remoteJudge), metrics: decodeMetrics)
-            router = RoleDecoderRouter(
-                default: localDecoder,
-                overrides: [.reflection: remoteDecoder, .tournament: remoteDecoder])
+            overrides[.reflection] = remoteDecoder
+            overrides[.tournament] = remoteDecoder
             print("Hybrid: reflection + tournament → remote \(remoteJudge); rest on-device.\n")
-        } else {
-            router = StaticDecoderRouter(localDecoder)
         }
+        if tools {
+            let registry = Self.researchRegistry()
+            let report: @Sendable (ToolCall) -> Void = { call in
+                let query = call.arguments["query"]?.stringValue ?? ""
+                print("  [tool] \(call.name)\(query.isEmpty ? "" : " — \"\(query)\"")")
+            }
+            // Ground generation + reflection; each wraps its current base (local, or the
+            // remote judge for reflection when --remote-judge is also set).
+            for role in [AgentRole.generation, .reflection] {
+                let inner = overrides[role] ?? localDecoder
+                overrides[role] = GroundedDecoder(
+                    model: llm, tools: registry, inner: inner, onToolCall: report)
+            }
+            print("Tools enabled (\(registry.all.count)) for generation + reflection.\n")
+        }
+        let router: any DecoderRouting = overrides.isEmpty
+            ? StaticDecoderRouter(localDecoder)
+            : RoleDecoderRouter(default: localDecoder, overrides: overrides)
 
         let engine = CoScientistEngine(
             router: router,
