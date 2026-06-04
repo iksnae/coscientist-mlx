@@ -64,8 +64,8 @@ Cross-references [`MODELS.md`](MODELS.md) §2; these are the subset that fits a 
 
 | Rank | Model | Repo id | Weights @4-bit | Reasoning | Notes |
 |---|---|---|---|---|---|
-| **1 (8 GB)** | Qwen3-4B Instruct-2507 | `mlx-community/Qwen3-4B-Instruct-2507-4bit-DWQ-2510` (plain: `…-4bit`) | ~2.2–2.4 GB | no (instruct) | Best JSON adherence at this size; reserve for newer 8 GB devices. Thinking variant: `Qwen3-4B-Thinking-2507`. |
-| **2 (broad floor)** | LFM2.5-1.2B-Thinking | ⚠️ `LiquidAI/LFM2.5-1.2B-Thinking-MLX-4bit` | **628 MB** | yes (native `<think>`) | Only sub-1 GB reasoner; fastest measured on-device. **Quirk: defaults to *Pythonic* tool calls, not JSON** — force JSON in the system prompt or use constrained decoding. |
+| **1 (8 GB)** | Qwen3-4B Instruct-2507 | `mlx-community/Qwen3-4B-Instruct-2507-4bit` | **~2.3 GB** ✅ | no (instruct) | Best JSON adherence at this size; this is the project's default LLM. ⚠️ The `…-4bit-DWQ-2510` variant exists but is **~6.8 GB** — use the plain `-4bit` on phones. |
+| **2 (broad floor)** | LFM2.5-1.2B-Thinking | `LiquidAI/LFM2.5-1.2B-Thinking-MLX-4bit` | **~660 MB** ✅ | yes (native `<think>`) | Only sub-1 GB reasoner; fastest measured on-device. **Quirk: defaults to *Pythonic* tool calls, not JSON** — force JSON in the system prompt or use constrained decoding. |
 | 3 | Qwen3-1.7B | `mlx-community/Qwen3-1.7B-4bit` | ~984 MB | yes (hybrid) | Best JSON in sub-2B class; notable throughput drop on long prompts. |
 | 4 | Llama-3.2-3B Instruct | `mlx-community/Llama-3.2-3B-Instruct-4bit` | ~1.8 GB | no | Proven/fast but ~3B@Q4 starts to hallucinate; weaker format adherence than Qwen3. |
 | 5 (fallback) | Llama-3.2-1B Instruct | `mlx-community/Llama-3.2-1B-Instruct-4bit` | ~713 MB | no | Cheap pairwise-judge fallback only. |
@@ -134,8 +134,10 @@ escalation). Treat an unattended on-device tournament as research, not a shippin
   inference.
 - [ ] First-run model download flow (resumable background `URLSession`, Wi-Fi gate, progress).
 - [ ] Add a **remote `LanguageModel` adapter** + per-stage routing policy for the hybrid split.
-- [ ] Verify ⚠️ repo ids on Hugging Face: `Qwen3-4B-Instruct-2507-4bit-DWQ-2510`,
-  `LiquidAI/LFM2.5-1.2B-Thinking-MLX-4bit`.
+- [x] Repo ids verified on HF (June 2026): `LFM2.5-1.2B-Thinking-MLX-4bit` ✅ (~660 MB);
+  `Qwen3-4B-Instruct-2507-4bit-DWQ-2510` ✅ but ~6.8 GB → ship the plain
+  `Qwen3-4B-Instruct-2507-4bit` (~2.3 GB) on phones. Device RAM figures (§2) remain
+  unverifiable without on-target `os_proc_available_memory()` checks.
 
 ## Sources
 
