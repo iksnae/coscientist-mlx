@@ -16,7 +16,7 @@ struct StudyDetailView: View {
     @State private var diskError: String?
 
     private enum ResultTab: String, CaseIterable {
-        case hypotheses = "Hypotheses", charts = "Charts", activity = "Activity"
+        case hypotheses = "Hypotheses", graph = "Graph", charts = "Charts", activity = "Activity"
     }
     private struct ConfirmDownload: Identifiable {
         let id = UUID()
@@ -145,6 +145,7 @@ struct StudyDetailView: View {
     @ViewBuilder private var results: some View {
         switch resultTab {
         case .hypotheses: hypothesesList
+        case .graph: GraphView(phase: live ? runner.phase : "", hypotheses: hypotheses)
         case .charts: ChartsView(timeline: live ? runner.timeline : [], hypotheses: hypotheses)
         case .activity: activityList
         }
