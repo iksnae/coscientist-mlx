@@ -10,6 +10,7 @@ import Observation
 @Observable
 final class WorkflowRunner {
     var goal = "Improve lithium-ion battery energy density"
+    var generatorKey = ModelCatalog.defaultGeneratorKey
     var hypothesesPerGeneration = 4
     var iterations = 1
 
@@ -40,7 +41,7 @@ final class WorkflowRunner {
         lastResult = nil
 
         do {
-            let model = try await MLXLanguageModel.load()
+            let model = try await MLXLanguageModel.load(generatorKey)
             let embedder = try await MLXEmbeddingModel.load()
             let decodeMetrics = DecodeMetrics()
             let engine = CoScientistEngine(

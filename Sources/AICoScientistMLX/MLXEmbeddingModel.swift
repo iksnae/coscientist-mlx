@@ -17,15 +17,16 @@ public actor MLXEmbeddingModel: AICoScientistKit.EmbeddingModel {
         self.container = container
     }
 
-    /// Default embedder: Qwen3-Embedding-0.6B (4-bit DWQ, ~335 MB). Per docs/MODELS.md — the
-    /// only top-MTEB-tier model in the Swift `qwen3` registry while staying tiny. (Note: a
-    /// reported memory-growth quirk on repeated inference — we embed once per proximity phase.)
-    public static let defaultModel = ModelConfiguration(id: "mlx-community/Qwen3-Embedding-0.6B-4bit-DWQ")
-
-    /// Load an embedding model, downloading from Hugging Face on first use.
+    /// Load an embedder by catalog key (e.g. "qwen3-embed-0.6b") or raw HF repo id. Catalog
+    /// entries load at a pinned commit; others load at `main` with a logged warning. Defaults
+    /// to the curated default embedder.
     public static func load(
-        _ configuration: ModelConfiguration = defaultModel
+        _ keyOrID: String = ModelCatalog.defaultEmbedderKey
     ) async throws -> MLXEmbeddingModel {
+        let resolved = ModelCatalog.resolve(keyOrID)
+        if let warning = resolved.warning { Log.logger.warning("\(warning)") }
+        let configuration = ModelConfiguration(
+            id: resolved.repoID, revision: resolved.revision ?? "main")
         let container = try await EmbedderModelFactory.shared.loadContainer(
             from: #hubDownloader(),
             using: #huggingFaceTokenizerLoader(),

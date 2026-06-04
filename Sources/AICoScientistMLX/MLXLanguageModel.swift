@@ -21,22 +21,23 @@ public actor MLXLanguageModel: AICoScientistKit.LanguageModel {
         self.container = container
     }
 
-    /// Default LLM: Qwen3-4B-Instruct-2507 (4-bit). Per docs/MODELS.md — smaller and smarter
-    /// than the older 7B default, instruct/non-thinking for the cleanest schema-constrained JSON.
-    public static let defaultModel = ModelConfiguration(id: "mlx-community/Qwen3-4B-Instruct-2507-4bit")
-
-    /// Load a model by configuration, downloading from Hugging Face on first use and
-    /// keeping it resident in unified memory.
+    /// Load a generator by catalog key (e.g. "qwen3-4b") or raw HF repo id. Catalog entries
+    /// load at a **pinned commit**; a trusted-org or unverified id loads at `main` with a
+    /// logged warning (see `ModelCatalog`). Defaults to the curated default generator.
     public static func load(
-        _ configuration: ModelConfiguration = defaultModel
+        _ keyOrID: String = ModelCatalog.defaultGeneratorKey
     ) async throws -> MLXLanguageModel {
+        let resolved = ModelCatalog.resolve(keyOrID)
+        if let warning = resolved.warning { Log.logger.warning("\(warning)") }
+        let configuration = ModelConfiguration(
+            id: resolved.repoID, revision: resolved.revision ?? "main")
         let container = try await #huggingFaceLoadModelContainer(configuration: configuration)
         return MLXLanguageModel(container: container)
     }
 
-    /// Convenience: load by Hugging Face repo id, so callers need not import MLX types.
+    /// Alias for callers that prefer the explicit label.
     public static func load(modelId: String) async throws -> MLXLanguageModel {
-        try await load(ModelConfiguration(id: modelId))
+        try await load(modelId)
     }
 
     public func generateText(
