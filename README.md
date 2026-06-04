@@ -111,6 +111,24 @@ swift build
 swift test
 ```
 
+## Demo apps (macOS + iOS)
+
+The SwiftUI apps live under [`Apps/`](Apps) and are driven by an
+[XcodeGen](https://github.com/yonaskolb/XcodeGen) spec
+([`project.yml`](project.yml)) — the generated `.xcodeproj` is **gitignored**,
+so after cloning (or pulling changes that touch targets/sources) you must
+regenerate it:
+
+```bash
+brew install xcodegen        # once
+xcodegen generate            # writes CoScientist.xcodeproj from project.yml
+open CoScientist.xcodeproj   # macOS: scheme CoScientistDemo · iOS: scheme CoScientistApp
+```
+
+Open **`CoScientist.xcodeproj`** (not any older/stale `*.xcodeproj` left over
+from before the rename — delete those). `project.yml` is the source of truth;
+re-run `xcodegen generate` whenever the project looks stale.
+
 ## Documentation
 
 - **API reference (DocC):** <https://iksnae.github.io/coscientist-mlx/documentation/aicoscientistkit/>
