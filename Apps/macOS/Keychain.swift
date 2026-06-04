@@ -3,7 +3,7 @@ import Security
 
 /// Minimal Keychain wrapper for secrets (API keys, tokens) — never stored in UserDefaults.
 enum Keychain {
-    private static let service = "studio.khaos.coscientist"
+    private static let service = "com.iksnae.coscientist"
 
     static func set(_ value: String, for account: String) {
         let base: [String: Any] = [

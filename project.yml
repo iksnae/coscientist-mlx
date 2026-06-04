@@ -6,7 +6,7 @@
 #   CoScientistDemo  — macOS playground     (Apps/macOS)
 name: CoScientist
 options:
-  bundleIdPrefix: studio.khaos.coscientist
+  bundleIdPrefix: com.iksnae
   deploymentTarget:
     iOS: "17.0"
     macOS: "14.0"
@@ -30,7 +30,7 @@ targets:
       - Apps/iOS
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: studio.khaos.coscientist.app
+        PRODUCT_BUNDLE_IDENTIFIER: com.iksnae.coscientist.app
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: CoScientist
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
@@ -51,7 +51,7 @@ targets:
       - Apps/macOS
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: studio.khaos.coscientist.demo
+        PRODUCT_BUNDLE_IDENTIFIER: com.iksnae.coscientist.demo
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: CoScientist
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
