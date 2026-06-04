@@ -1,9 +1,10 @@
 # xcodegen spec for the demo apps. Generate with:
 #   xcodegen generate
-# (The .xcodeproj is gitignored; this spec is the source of truth.)
-#   CoScientistApp     — iOS validation app (ios/App)
-#   CoScientistDemo    — macOS playground: live, on-device full workflow (macos/App)
-name: CoScientistApp
+# (The CoScientist.xcodeproj is gitignored; this spec is the source of truth — re-run
+#  `xcodegen generate` after pulling if targets/sources look stale.)
+#   CoScientistApp   — iOS validation app   (Apps/iOS)
+#   CoScientistDemo  — macOS playground     (Apps/macOS)
+name: CoScientist
 options:
   bundleIdPrefix: studio.khaos.coscientist
   deploymentTarget:
@@ -26,7 +27,7 @@ targets:
     platform: iOS
     deploymentTarget: "17.0"
     sources:
-      - ios/App
+      - Apps/iOS
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: studio.khaos.coscientist.app
@@ -46,7 +47,7 @@ targets:
     platform: macOS
     deploymentTarget: "14.0"
     sources:
-      - macos/App
+      - Apps/macOS
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: studio.khaos.coscientist.demo
