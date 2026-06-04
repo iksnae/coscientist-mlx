@@ -10,7 +10,7 @@ Transparent activity — verbose feed with inline animated visuals
 
 ## Status
 
-In progress
+Complete
 
 ## Duration And Usage Tracking
 
@@ -18,8 +18,8 @@ In progress
 | --- | --- |
 | Planned start | 2026-06-04 |
 | Actual start | 2026-06-04 |
-| Actual end | TBD |
-| Elapsed | TBD |
+| Actual end | 2026-06-04 |
+| Elapsed | same day |
 | Scope class | Small |
 | Confidence | High |
 
@@ -27,22 +27,22 @@ In progress
 
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
-| `ActivityEvent.feed(from:)` derives a typed event list (kind, counts, top Elo, pool size, monotonic steps) from `WorkflowProgress`. | Pending | Track A |
-| `Kind(phase:)` maps known phases and falls back to `.other`. | Pending | Track A |
-| `RunSnapshot` round-trips `activity`; a JSON without the field decodes to an empty log. | Pending | Track A |
-| The activity feed renders typed rows + sticky sparkline, animates in, and is available after a run from the persisted log. | Pending | Track B |
-| No engine/run behavior change beyond recording the event log. | Pending | Track B |
-| New behaviour is driven by a test written first (mock backend, no GPU). | Pending | all tracks |
-| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Pending | `git grep` check |
+| `ActivityEvent.feed(from:)` derives a typed event list (kind, counts, top Elo, pool size, monotonic steps) from `WorkflowProgress`. | Done | `ActivityEventTests.feedDerives` (9b46777) |
+| `Kind(phase:)` maps known phases and falls back to `.other`. | Done | `ActivityEventTests.unknownKind` (9b46777) |
+| `RunSnapshot` round-trips `activity`; a JSON without the field decodes to an empty log. | Done | `ActivityEventTests.snapshotRoundTrip` + `legacyDecodes` (9b46777) |
+| The activity feed renders typed rows + sticky sparkline, animates in, and is available after a run from the persisted log. | Done | `StudyDetailView.activityList` (9724d1d); macOS BUILD SUCCEEDED |
+| No engine/run behavior change beyond recording the event log. | Done | Only `WorkflowRunner` records events; snapshot field is additive. |
+| New behaviour is driven by a test written first (mock backend, no GPU). | Done | `ActivityEventTests` written before impl. |
+| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Done | `git grep "import MLX" -- '*.swift'` → only adapter + `Package.swift`. |
 
 ## Validation Log
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `swift build` | Pending | — |
-| `swift test` | Pending | — |
-| macOS app build | Pending | — |
-| `git diff --check` | Pending | — |
+| `swift build` | Passed | Clean on Apple Silicon. |
+| `swift test` | Passed | 131 tests / 28 suites green (+4). |
+| macOS app build | Passed | `xcodebuild … CoScientistDemo` BUILD SUCCEEDED. |
+| `git diff --check` | Passed | Whitespace clean. |
 
 ## Decisions
 

@@ -17,22 +17,21 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
-- **M8 — Hypothesis selection + inspector** (PR #34). Pure
-  `HypothesisDetail` + `GraphSelection`; selectable list + tappable graph
-  + shared inspector. See `docs/MILESTONE-8-CLOSEOUT.md`. 127 tests / 27
-  suites; macOS app builds.
+- **M9 — Transparent activity** (PR #35). `ActivityEvent` + persisted
+  `RunSnapshot.activity`; rich macOS feed (per-phase icons, counts,
+  sticky Elo sparkline, animated insertion). See
+  `docs/MILESTONE-9-CLOSEOUT.md`. 131 tests / 28 suites; macOS app builds.
+- **M8 — Hypothesis selection + inspector** (PR #34).
+  See `docs/MILESTONE-8-CLOSEOUT.md`.
 - **M7 — Hosted per-agent model backing** (PR #31).
-  See `docs/MILESTONE-7-CLOSEOUT.md`.
-- **M6 — Agent tool-use loop** (PR #30). See `docs/MILESTONE-6-CLOSEOUT.md`.
+- **M6 — Agent tool-use loop** (PR #30).
 - Earlier: M0–M5 numbered milestones; post-M5 feature work (PRs #6–#29).
 
 ## Next in flight
 
-- **M9 — Transparent activity** — `docs/MILESTONE-9-PLAN.md` (Ready).
-  Verbose, persisted activity feed with per-phase icons, counts, and
-  inline animated sparklines.
-- Drafts queued: **M10** Foundation Models backend, **M11** inference
-  optimization.
+- **M10 — Foundation Models backend** — `docs/MILESTONE-10-PLANNING-DRAFT.md`.
+  Apple's native tool calling as an optional, availability-gated backend.
+  Next to grind. **M11** inference optimization queued.
 
 ## Pointers
 
