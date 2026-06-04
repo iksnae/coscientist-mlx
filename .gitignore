@@ -4,6 +4,12 @@
 *.xcodeproj
 *.xcworkspace
 
+# xcodebuild derived data (required for GPU/Metal builds — see README)
+.xcbuild/
+
+# Coverage / profiling artifacts from xcodebuild runs
+*.profraw
+
 # macOS
 .DS_Store
 

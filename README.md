@@ -5,12 +5,20 @@ a multi-agent pipeline that generates, peer-reviews, ranks (via Elo tournaments)
 iteratively evolves scientific research hypotheses — running **local open models on Apple
 Silicon**, fully offline.
 
-> Status: **M2 — schema-constrained decoding.** M0 foundation + M1 MLX inference adapter
-> (`MLXLanguageModel`, local models on Apple Silicon) + M2 schema-driven decoding
-> (typed `JSONSchema` per agent output, prompt injection, validation, repair-retry). The
-> agent engine lands in M4. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full
-> design and milestones, and [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey
-> and tiered recommendations.
+> Status: **M5 — embedding proximity.** M0 foundation + M1 MLX inference + M2 schema-driven
+> decoding + M3 the seven agents + M4 the `CoScientistEngine` orchestrating the full workflow
+> + M5 embedding-based proximity (`MLXEmbedders` → cosine → union-find clustering) replacing
+> the reference's LLM-judged, string-matched clustering. Runnable end-to-end via
+> `aicoscientist "<goal>" --run`. Next: M6 (state persistence + parity CLI polish). See
+> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and milestones,
+> [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey and tiered recommendations,
+> and [`docs/IOS.md`](docs/IOS.md) for on-device iPhone/iPad enablement.
+
+## Run the full workflow
+
+```bash
+swift run aicoscientist "Improve lithium-ion energy density" --run   # downloads model on first run
+```
 
 ## Why a port
 

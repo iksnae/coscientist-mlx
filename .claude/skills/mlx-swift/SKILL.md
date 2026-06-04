@@ -37,6 +37,29 @@ For structured output, add (see `references/structured-output.md`):
 .package(url: "https://github.com/petrukha-ivan/mlx-swift-structured", from: "0.1.0"), // XGrammar constrained decoding (early, 0.1.0)
 ```
 
+## Rule #0 — GPU builds need `xcodebuild`, not `swift build`
+
+**`swift build`/`swift run`/`swift test` CANNOT compile MLX's Metal shaders.** They build
+fine, but the first GPU operation fails at runtime with `Failed to load the default
+metallib`. mlx-swift's own README states SwiftPM (command line) cannot build the shaders —
+only Xcode/`xcodebuild` can. Consequences for this project:
+
+- **Pure-Swift/mock unit tests** (no GPU) run fine under `swift test` — this is why CI is
+  green without a GPU step.
+- **Anything that actually runs a model** (the CLI `--run`/`--probe`, the
+  `RUN_MLX_INTEGRATION=1` tests) must be built/run via `xcodebuild`:
+  ```bash
+  # -skipMacroValidation is REQUIRED: Xcode otherwise refuses the MLXHuggingFaceMacros plugin
+  # ("macro must be enabled before it can be used"). swift build trusts macros automatically.
+  xcodebuild -scheme aicoscientist -destination 'platform=macOS' \
+    -derivedDataPath .xcbuild -skipMacroValidation build
+  .xcbuild/Build/Products/Debug/aicoscientist "<goal>" --run
+  # integration tests:
+  xcodebuild test -scheme coscientist-mlx-Package -destination 'platform=macOS' \
+    -derivedDataPath .xcbuild -skipMacroValidation
+  ```
+  Run the binary from the `xcodebuild` products dir so the `Cmlx` Metal bundle is alongside it.
+
 ## Rule #1 — `MLXArray` is NOT `Sendable`
 
 This dominates every design decision under Swift 6 strict concurrency.
