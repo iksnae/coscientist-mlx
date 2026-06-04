@@ -1,13 +1,16 @@
 import AICoScientistKit
+import Foundation
 import Grape
 import SwiftUI
 
 /// Node-graph visualization of a study, via Grape's force-directed graph:
 /// - Pipeline: the agent operations and how they connect, with the active phase highlighted.
 /// - Artifacts: hypotheses (sized by Elo, colored by cluster) linked to their similarity clusters.
+/// Tapping a hypothesis node selects it (drives the shared inspector).
 struct GraphView: View {
     let phase: String          // current live phase, or "" when not running
     let hypotheses: [Hypothesis]
+    @Binding var selectedID: UUID?
 
     @State private var mode: Mode = .pipeline
     @State private var pipelineState = ForceDirectedGraphState()
@@ -70,6 +73,7 @@ struct GraphView: View {
             .manyBody()
             .center()
         }
+        .graphOverlay { proxy in tapCatcher(proxy) }
     }
 
     // MARK: Artifacts (activity chain)
@@ -89,6 +93,8 @@ struct GraphView: View {
                     NodeMark(id: h.id.uuidString)
                         .symbolSize(radius: radius(for: h.eloRating))
                         .foregroundStyle(color(for: h.similarityClusterID))
+                        .stroke(h.id == selectedID ? Color.primary : Color.clear,
+                            StrokeStyle(lineWidth: 2.5))
                         .annotation("\(h.eloRating)")
                 }
                 Series(clusterIDs) { cid in
@@ -106,7 +112,22 @@ struct GraphView: View {
                 .manyBody()
                 .center()
             }
+            .graphOverlay { proxy in tapCatcher(proxy) }
         }
+    }
+
+    /// A transparent tap catcher over the graph: maps a tap point to a node id via Grape's
+    /// proxy, resolves it, and selects the hypothesis. `simultaneousGesture` so the graph's
+    /// own pan/zoom still work.
+    private func tapCatcher(_ proxy: GraphProxy) -> some View {
+        Color.clear.contentShape(Rectangle())
+            .simultaneousGesture(
+                SpatialTapGesture().onEnded { event in
+                    guard let id = proxy.node(of: String.self, at: event.location),
+                        case let .hypothesis(detail)? = GraphSelection.resolve(nodeID: id, in: hypotheses)
+                    else { return }
+                    selectedID = detail.id
+                })
     }
 
     private func radius(for elo: Int) -> CGFloat {
