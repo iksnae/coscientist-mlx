@@ -128,18 +128,25 @@ and a tiered (16/32/64 GB) recommendation that supersedes these placeholders liv
 ## 4. Agents
 
 ```swift
-protocol Agent {
-    associatedtype Output: Decodable & Sendable
+public protocol Agent: Sendable {
+    associatedtype Input: Sendable
+    associatedtype Output: Decodable & Sendable & Schematized
     var name: String { get }
     var systemPrompt: String { get }
-    func run(_ input: Input, model: LanguageModel) async throws -> Output
+    func userPrompt(for input: Input) -> String
 }
+// run(_:using:config:) is a protocol extension that delegates to a SchemaConstrainedDecoding.
 ```
 
-Seven agents, each a thin wrapper: system prompt (ported verbatim from the
-`_get_*_agent_prompt` methods, adjusted for the constrained-schema contract) + typed
-`Output`. No per-agent state files (the Python `saved_state_path` is unused for logic);
-state persistence is centralized in the engine.
+**Status (M3, landed).** Seven agents, each a thin wrapper carrying only its role
+(`systemPrompt`, ported from the `_get_*_agent_prompt` methods with the redundant JSON
+examples removed — the schema is injected by the decoder) and `userPrompt(for:)`. The
+`run` extension delegates decoding to the M2 `SchemaConstrainedDecoder`, so agents hold no
+inference/parsing logic (SRP) and are added by conformance (OCP). Every `Output` is
+`Schematized`. The Proximity agent references hypotheses **by index**, not text, fixing the
+Python string-equality fragility; it is the parity/fallback path and is superseded by the
+embedding-based `ProximityAnalyzer` in M5 (behind a protocol). No per-agent state files;
+persistence is centralized in the engine.
 
 ---
 
