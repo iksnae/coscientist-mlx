@@ -14,6 +14,7 @@ public actor CoScientistEngine {
     private let decoder: any SchemaConstrainedDecoding
     private let proximityAnalyzer: any ProximityAnalyzer
     private let config: EngineConfiguration
+    private let decodeMetrics: DecodeMetrics?
     private var rng: SeededGenerator
 
     private var hypotheses: [Hypothesis] = []
@@ -23,15 +24,19 @@ public actor CoScientistEngine {
 
     /// - Parameter proximityAnalyzer: clustering strategy. Defaults to the LLM agent path;
     ///   pass an `EmbeddingProximityAnalyzer` for the embedding-based (preferred) path.
+    /// - Parameter decodeMetrics: pass the same `DecodeMetrics` you gave the decoder to fold
+    ///   repair/failure telemetry into the result.
     public init(
         decoder: any SchemaConstrainedDecoding,
         config: EngineConfiguration = .init(),
         seed: UInt64? = nil,
-        proximityAnalyzer: (any ProximityAnalyzer)? = nil
+        proximityAnalyzer: (any ProximityAnalyzer)? = nil,
+        decodeMetrics: DecodeMetrics? = nil
     ) {
         self.decoder = decoder
         self.proximityAnalyzer = proximityAnalyzer ?? AgentProximityAnalyzer(decoder: decoder)
         self.config = config
+        self.decodeMetrics = decodeMetrics
         self.rng = SeededGenerator(seed: seed ?? UInt64.random(in: .min ... .max))
     }
 
@@ -55,6 +60,11 @@ public actor CoScientistEngine {
             rankingPhase()
             await tournamentPhase(goal: goal)
             await proximityPhase()
+        }
+
+        if let snapshot = await decodeMetrics?.snapshot() {
+            metrics.repairAttempts = snapshot.repairs
+            metrics.decodeFailures = snapshot.failures
         }
 
         let ranked = hypotheses.sorted { $0.eloRating > $1.eloRating }

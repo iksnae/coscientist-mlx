@@ -93,4 +93,27 @@ struct EngineTests {
         #expect(!result.errors.isEmpty)                          // generation could not parse
         #expect(result.topRankedHypotheses.isEmpty)             // no hypotheses, but no crash
     }
+
+    @Test("Folds decode telemetry into the result (clean run → zero repairs/failures)")
+    func telemetryClean() async {
+        let metrics = DecodeMetrics()
+        let engine = CoScientistEngine(
+            decoder: SchemaConstrainedDecoder(model: ScriptedModel(), metrics: metrics),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            seed: 3, decodeMetrics: metrics)
+        let result = await engine.run(researchGoal: "g")
+        #expect(result.metrics.repairAttempts == 0)
+        #expect(result.metrics.decodeFailures == 0)
+    }
+
+    @Test("Folds decode failures when the model can't produce valid JSON")
+    func telemetryFailures() async {
+        let metrics = DecodeMetrics()
+        let engine = CoScientistEngine(
+            decoder: SchemaConstrainedDecoder(model: BrokenModel(), metrics: metrics),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            seed: 3, decodeMetrics: metrics)
+        let result = await engine.run(researchGoal: "g")
+        #expect(result.metrics.decodeFailures > 0)
+    }
 }
