@@ -21,10 +21,14 @@ public actor MLXLanguageModel: AICoScientistKit.LanguageModel {
         self.container = container
     }
 
+    /// Default LLM: Qwen3-4B-Instruct-2507 (4-bit). Per docs/MODELS.md — smaller and smarter
+    /// than the older 7B default, instruct/non-thinking for the cleanest schema-constrained JSON.
+    public static let defaultModel = ModelConfiguration(id: "mlx-community/Qwen3-4B-Instruct-2507-4bit")
+
     /// Load a model by configuration, downloading from Hugging Face on first use and
-    /// keeping it resident in unified memory. Defaults to Qwen2.5-7B-Instruct-4bit.
+    /// keeping it resident in unified memory.
     public static func load(
-        _ configuration: ModelConfiguration = LLMRegistry.qwen2_5_7b
+        _ configuration: ModelConfiguration = defaultModel
     ) async throws -> MLXLanguageModel {
         let container = try await #huggingFaceLoadModelContainer(configuration: configuration)
         return MLXLanguageModel(container: container)
