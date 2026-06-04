@@ -49,11 +49,13 @@ struct AICoScientistCommand: AsyncParsableCommand {
     }
 
     private func runWorkflow() async throws {
-        print("Loading local model (first run downloads from Hugging Face)…")
+        print("Loading local models (first run downloads from Hugging Face)…")
         let model = try await MLXLanguageModel.load()
+        let embedder = try await MLXEmbeddingModel.load()
         let engine = CoScientistEngine(
             decoder: SchemaConstrainedDecoder(model: model),
-            config: .init(maxIterations: iterations, hypothesesPerGeneration: count)
+            config: .init(maxIterations: iterations, hypothesesPerGeneration: count),
+            proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder)
         )
 
         print("Running workflow…\n")

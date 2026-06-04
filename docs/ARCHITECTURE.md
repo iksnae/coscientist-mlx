@@ -180,10 +180,13 @@ Persistence (`save/loadState`) is not yet implemented — tracked for a later mi
 
 ## 6. Where the Swift/MLX version is *superior*
 
-1. **Embedding-based proximity.** Replace LLM-judged clustering + string-equality
-   matching with MLX embeddings → cosine-similarity matrix → threshold/agglomerative
-   clustering. Deterministic, GPU-accelerated, no parse step, no fragile text matching.
-   Hypotheses get stable `UUID`s; nothing depends on `text ==`.
+1. **Embedding-based proximity.** *(M5, landed.)* `EmbeddingProximityAnalyzer` embeds each
+   hypothesis via `MLXEmbedders` (default BGE-small) and clusters by cosine threshold with
+   union-find (`EmbeddingClusterer`). Deterministic, GPU-accelerated, no JSON parsing, no
+   fragile text matching — clusters reference stable `UUID`s. Lives behind the
+   `ProximityAnalyzer` protocol with the LLM `AgentProximityAnalyzer` as fallback; the
+   clustering math is pure-Swift in `Kit` and fully unit-tested with a mock embedder. The
+   CLI workflow uses the embedding path.
 2. **Constrained decoding** eliminates the entire JSON-parse-failure class.
 3. **Batched generation.** MLX can generate many hypotheses / score many reviews in one
    batched pass — a structural speedup over the reference's sequential API calls.

@@ -12,6 +12,7 @@ import Foundation
 /// recorded in `WorkflowResult.errors` and the workflow continues.
 public actor CoScientistEngine {
     private let decoder: any SchemaConstrainedDecoding
+    private let proximityAnalyzer: any ProximityAnalyzer
     private let config: EngineConfiguration
     private var rng: SeededGenerator
 
@@ -20,12 +21,16 @@ public actor CoScientistEngine {
     private var clusters: [SimilarityCluster] = []
     private var errors: [String] = []
 
+    /// - Parameter proximityAnalyzer: clustering strategy. Defaults to the LLM agent path;
+    ///   pass an `EmbeddingProximityAnalyzer` for the embedding-based (preferred) path.
     public init(
         decoder: any SchemaConstrainedDecoding,
         config: EngineConfiguration = .init(),
-        seed: UInt64? = nil
+        seed: UInt64? = nil,
+        proximityAnalyzer: (any ProximityAnalyzer)? = nil
     ) {
         self.decoder = decoder
+        self.proximityAnalyzer = proximityAnalyzer ?? AgentProximityAnalyzer(decoder: decoder)
         self.config = config
         self.rng = SeededGenerator(seed: seed ?? UInt64.random(in: .min ... .max))
     }
@@ -167,15 +172,14 @@ public actor CoScientistEngine {
     private func proximityPhase() async {
         guard !hypotheses.isEmpty else { return }
         do {
-            let out = try await ProximityAgent().run(
-                .init(hypotheses: hypotheses.map(\.text)), using: decoder)
-            clusters = out.clusters.map { cluster in
-                var memberIDs: [UUID] = []
-                for index in cluster.memberIndices where hypotheses.indices.contains(index) {
-                    hypotheses[index].similarityClusterID = cluster.clusterID
-                    memberIDs.append(hypotheses[index].id)
-                }
-                return SimilarityCluster(clusterID: cluster.clusterID, memberIDs: memberIDs)
+            let result = try await proximityAnalyzer.cluster(hypotheses)
+            clusters = result
+            var assignment: [UUID: String] = [:]
+            for cluster in result {
+                for id in cluster.memberIDs { assignment[id] = cluster.clusterID }
+            }
+            for i in hypotheses.indices {
+                hypotheses[i].similarityClusterID = assignment[hypotheses[i].id]
             }
         } catch {
             errors.append("proximity: \(error)")

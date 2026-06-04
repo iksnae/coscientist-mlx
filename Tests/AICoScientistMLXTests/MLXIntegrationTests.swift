@@ -51,4 +51,20 @@ struct MLXIntegrationTests {
         #expect(verdict.winner == .a || verdict.winner == .b)
         #expect(!verdict.rationale.isEmpty)
     }
+
+    @Test("Embedding model produces normalized vectors that cluster related texts")
+    func embeddingProximity() async throws {
+        let model = try await MLXEmbeddingModel.load()
+        let related = Hypothesis(text: "Solar panel efficiency improves with anti-reflective coatings.")
+        let alsoSolar = Hypothesis(text: "Anti-reflective coatings raise photovoltaic panel efficiency.")
+        let unrelated = Hypothesis(text: "Gut microbiota composition influences mood regulation.")
+
+        let analyzer = EmbeddingProximityAnalyzer(model: model, threshold: 0.6)
+        let clusters = try await analyzer.cluster([related, alsoSolar, unrelated])
+
+        // The two solar hypotheses should share a cluster; the microbiome one should not.
+        let solarCluster = clusters.first { $0.memberIDs.contains(related.id) }
+        #expect(solarCluster?.memberIDs.contains(alsoSolar.id) == true)
+        #expect(solarCluster?.memberIDs.contains(unrelated.id) == false)
+    }
 }

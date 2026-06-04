@@ -5,11 +5,11 @@ a multi-agent pipeline that generates, peer-reviews, ranks (via Elo tournaments)
 iteratively evolves scientific research hypotheses — running **local open models on Apple
 Silicon**, fully offline.
 
-> Status: **M4 — engine.** M0 foundation + M1 MLX inference + M2 schema-driven decoding +
-> M3 the seven agents + M4 the `CoScientistEngine` actor orchestrating the full workflow
-> (generation → reflection → ranking → tournament → iterate: meta-review → evolution →
-> reflection → ranking → tournament → proximity), runnable end-to-end via `aicoscientist
-> "<goal>" --run`. Next: M5 embedding-based proximity. See
+> Status: **M5 — embedding proximity.** M0 foundation + M1 MLX inference + M2 schema-driven
+> decoding + M3 the seven agents + M4 the `CoScientistEngine` orchestrating the full workflow
+> + M5 embedding-based proximity (`MLXEmbedders` → cosine → union-find clustering) replacing
+> the reference's LLM-judged, string-matched clustering. Runnable end-to-end via
+> `aicoscientist "<goal>" --run`. Next: M6 (state persistence + parity CLI polish). See
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and milestones,
 > [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey and tiered recommendations,
 > and [`docs/IOS.md`](docs/IOS.md) for on-device iPhone/iPad enablement.
