@@ -6,6 +6,7 @@
 
 # xcodebuild derived data (required for GPU/Metal builds — see README)
 .xcbuild/
+.xcbuild-ios/
 
 # Coverage / profiling artifacts from xcodebuild runs
 *.profraw
