@@ -1,0 +1,94 @@
+name: Docs
+
+# Builds the DocC site for the library targets and deploys it to GitHub Pages.
+#
+# One-time setup (repo Settings → Pages): set "Build and deployment" → Source =
+# "GitHub Actions". After that this workflow publishes to
+# https://<owner>.github.io/coscientist-mlx/ on every push to main.
+#
+# Notes:
+#   - Runs on macOS because generating a symbol graph for the MLX adapter compiles the
+#     MLX Swift/C++ sources (same as the normal `swift build`). No GPU is needed — DocC
+#     only needs to *compile*, not run Metal.
+#   - --hosting-base-path coscientist-mlx because project Pages serve under /<repo>/.
+#   - Combined documentation merges all three library targets into one archive so the
+#     site has a single root with Kit + MLX + Remote.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Sources/**"
+      - "**/*.docc/**"
+      - "Package.swift"
+      - "Package.resolved"
+      - ".github/workflows/docs.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment; let in-progress runs finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build DocC site
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Swift version
+        run: swift --version
+
+      - name: Generate combined DocC archive (static hosting)
+        run: |
+          swift package --allow-writing-to-directory ./docs-site \
+            generate-documentation \
+            --target AICoScientistKit \
+            --target AICoScientistMLX \
+            --target AICoScientistRemote \
+            --enable-experimental-combined-documentation \
+            --disable-indexing \
+            --transform-for-static-hosting \
+            --hosting-base-path coscientist-mlx \
+            --output-path ./docs-site
+
+      - name: Add root redirect → AICoScientistKit
+        run: |
+          cat > ./docs-site/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <meta http-equiv="refresh"
+                    content="0; url=./documentation/aicoscientistkit/" />
+              <title>coscientist-mlx documentation</title>
+            </head>
+            <body>
+              Redirecting to
+              <a href="./documentation/aicoscientistkit/">the documentation</a>…
+            </body>
+          </html>
+          HTML
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./docs-site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
