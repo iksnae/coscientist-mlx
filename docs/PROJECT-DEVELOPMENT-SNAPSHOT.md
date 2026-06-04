@@ -17,20 +17,22 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
-- **M7 — Hosted per-agent model backing** (PR #31). Model discovery,
-  `RoleBackend`/`RoleDecoderRouter.backed`, CLI `--agent-model`, app
-  presets + per-agent pickers. See `docs/MILESTONE-7-CLOSEOUT.md`.
-  123 tests / 26 suites; macOS app builds.
+- **M8 — Hypothesis selection + inspector** (PR #34). Pure
+  `HypothesisDetail` + `GraphSelection`; selectable list + tappable graph
+  + shared inspector. See `docs/MILESTONE-8-CLOSEOUT.md`. 127 tests / 27
+  suites; macOS app builds.
+- **M7 — Hosted per-agent model backing** (PR #31).
+  See `docs/MILESTONE-7-CLOSEOUT.md`.
 - **M6 — Agent tool-use loop** (PR #30). See `docs/MILESTONE-6-CLOSEOUT.md`.
 - Earlier: M0–M5 numbered milestones; post-M5 feature work (PRs #6–#29).
 
 ## Next in flight
 
-- **M8 — Hypothesis selection + inspector** — `docs/MILESTONE-8-PLANNING-DRAFT.md`.
-  Results-presentation UX (select a hypothesis in the list/graph, inspect
-  its full detail) pulled ahead on operator signal. Next to grind.
-- Drafts queued: **M9** transparent activity feed, **M10** Foundation
-  Models backend (deferred from M8), **M11** inference optimization.
+- **M9 — Transparent activity** — `docs/MILESTONE-9-PLAN.md` (Ready).
+  Verbose, persisted activity feed with per-phase icons, counts, and
+  inline animated sparklines.
+- Drafts queued: **M10** Foundation Models backend, **M11** inference
+  optimization.
 
 ## Pointers
 
