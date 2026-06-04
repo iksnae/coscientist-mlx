@@ -20,11 +20,12 @@ final class WorkflowRunner {
     private(set) var hypotheses: [Hypothesis] = []
     private(set) var metrics = ExecutionMetrics()
     private(set) var errors: [String] = []
-    private(set) var activity: [String] = []
+    private(set) var activity: [ActivityEvent] = []
     private(set) var downloadProgress: Double?
     private(set) var timeline: [ProgressPoint] = []
 
     private var task: Task<Void, Never>?
+    private var activityStep = 0
 
     struct ProgressPoint: Identifiable, Sendable {
         let id = UUID()
@@ -63,7 +64,7 @@ final class WorkflowRunner {
         status = "Loading models (first run downloads from Hugging Face)…"
         phase = ""; detail = ""; completed = 0; total = 0
         hypotheses = []; errors = []; activity = []; metrics = ExecutionMetrics()
-        timeline = []; downloadProgress = nil
+        timeline = []; downloadProgress = nil; activityStep = 0
         study.status = .running
 
         let settings = SettingsStore.shared
@@ -126,7 +127,9 @@ final class WorkflowRunner {
                     result.totalWorkflowTime, result.metrics.repairAttempts,
                     result.metrics.decodeFailures)
 
-            study.snapshot = RunSnapshot(researchGoal: study.goal, result: result)
+            var snapshot = RunSnapshot(researchGoal: study.goal, result: result)
+            snapshot.activity = activity
+            study.snapshot = snapshot
             study.status = cancelled ? .draft : .done
         } catch {
             status = "Error: \(error)"
@@ -144,10 +147,8 @@ final class WorkflowRunner {
         total = progress.total
         hypotheses = progress.hypotheses
         metrics = progress.metrics
-        let line =
-            "[iter \(progress.iteration)] \(progress.phase)"
-            + (progress.detail.isEmpty ? "" : " · \(progress.detail)")
-        activity.append(line)
+        activity.append(ActivityEvent(step: activityStep, progress: progress))
+        activityStep += 1
         if activity.count > 200 { activity.removeFirst(activity.count - 200) }
 
         if !progress.hypotheses.isEmpty {
