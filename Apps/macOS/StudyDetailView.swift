@@ -12,6 +12,7 @@ struct StudyDetailView: View {
 
     @State private var settings = SettingsStore.shared
     @State private var resultTab: ResultTab = .hypotheses
+    @State private var selectedID: Hypothesis.ID?
     @State private var confirm: ConfirmDownload?
     @State private var diskError: String?
 
@@ -144,11 +145,38 @@ struct StudyDetailView: View {
 
     @ViewBuilder private var results: some View {
         switch resultTab {
-        case .hypotheses: hypothesesList
-        case .graph: GraphView(phase: live ? runner.phase : "", hypotheses: hypotheses)
+        case .hypotheses: inspectorSplit { hypothesesList }
+        case .graph:
+            inspectorSplit {
+                GraphView(
+                    phase: live ? runner.phase : "", hypotheses: hypotheses,
+                    selectedID: $selectedID)
+            }
         case .charts: ChartsView(timeline: live ? runner.timeline : [], hypotheses: hypotheses)
         case .activity: activityList
         }
+    }
+
+    /// The selected hypothesis projected for the inspector, if any.
+    private var selectedDetail: HypothesisDetail? {
+        guard let id = selectedID, let h = hypotheses.first(where: { $0.id == id }) else { return nil }
+        return HypothesisDetail(h)
+    }
+
+    /// Main results content beside a trailing hypothesis inspector when something is selected.
+    @ViewBuilder private func inspectorSplit<Content: View>(
+        @ViewBuilder _ content: () -> Content
+    ) -> some View {
+        HStack(spacing: 0) {
+            content()
+            if let detail = selectedDetail {
+                Divider()
+                HypothesisInspector(detail: detail)
+                    .frame(width: 320)
+                    .transition(.move(edge: .trailing))
+            }
+        }
+        .animation(.default, value: selectedID)
     }
 
     @ViewBuilder private var hypothesesList: some View {
@@ -157,25 +185,28 @@ struct StudyDetailView: View {
                 "No hypotheses yet", systemImage: "flask",
                 description: Text("Run the study to generate and rank hypotheses."))
         } else {
-            List(hypotheses) { h in
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 10) {
-                        Label("\(h.eloRating)", systemImage: "trophy")
-                            .font(.caption.monospacedDigit()).foregroundStyle(.blue)
-                        Text(String(format: "score %.2f", h.score))
-                            .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
-                        if h.totalMatches > 0 {
-                            Text("\(Int(h.winRate))% win").font(.caption2).foregroundStyle(.secondary)
+            List(selection: $selectedID) {
+                ForEach(hypotheses) { h in
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 10) {
+                            Label("\(h.eloRating)", systemImage: "trophy")
+                                .font(.caption.monospacedDigit()).foregroundStyle(.blue)
+                            Text(String(format: "score %.2f", h.score))
+                                .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                            if h.totalMatches > 0 {
+                                Text("\(Int(h.winRate))% win").font(.caption2).foregroundStyle(.secondary)
+                            }
+                            if let cluster = h.similarityClusterID {
+                                Text(cluster).font(.caption2)
+                                    .padding(.horizontal, 6).padding(.vertical, 2)
+                                    .background(.quaternary, in: Capsule())
+                            }
                         }
-                        if let cluster = h.similarityClusterID {
-                            Text(cluster).font(.caption2)
-                                .padding(.horizontal, 6).padding(.vertical, 2)
-                                .background(.quaternary, in: Capsule())
-                        }
+                        Text(h.text).font(.callout)
                     }
-                    Text(h.text).font(.callout)
+                    .padding(.vertical, 4)
+                    .tag(h.id)
                 }
-                .padding(.vertical, 4)
             }
         }
     }
