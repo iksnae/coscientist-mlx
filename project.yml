@@ -43,6 +43,7 @@ targets:
         product: AICoScientistMLX
 
   CoScientistDemo:
+    # macOS playground; depends on Remote too for the in-app hybrid judge.
     type: application
     platform: macOS
     deploymentTarget: "14.0"
@@ -66,3 +67,5 @@ targets:
         product: AICoScientistKit
       - package: coscientist-mlx
         product: AICoScientistMLX
+      - package: coscientist-mlx
+        product: AICoScientistRemote

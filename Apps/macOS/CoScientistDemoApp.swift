@@ -7,5 +7,9 @@ struct CoScientistDemoApp: App {
             PlaygroundView()
         }
         .defaultSize(width: 960, height: 620)
+
+        Settings {
+            SettingsView()
+        }
     }
 }

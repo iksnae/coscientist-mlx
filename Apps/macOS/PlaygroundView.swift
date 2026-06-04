@@ -7,6 +7,7 @@ import SwiftUI
 /// and metrics updating in real time. Export the finished run as JSON or Markdown.
 struct PlaygroundView: View {
     @State private var runner = WorkflowRunner()
+    @State private var store = SettingsStore.shared
     @State private var rightPane: RightPane = .hypotheses
 
     private enum RightPane: String, CaseIterable { case hypotheses = "Hypotheses", charts = "Charts" }
@@ -31,8 +32,14 @@ struct PlaygroundView: View {
     }
 
     private var controls: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("CoScientist").font(.largeTitle.bold())
+        @Bindable var store = store
+        return VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("CoScientist").font(.largeTitle.bold())
+                Spacer()
+                SettingsLink { Image(systemName: "gearshape") }
+                    .help("Providers & models settings (⌘,)")
+            }
             Text("Local AI co-scientist on Apple Silicon")
                 .font(.subheadline).foregroundStyle(.secondary)
 
@@ -41,12 +48,16 @@ struct PlaygroundView: View {
                 TextField("goal", text: $runner.goal, axis: .vertical)
                     .textFieldStyle(.roundedBorder).lineLimit(2...5).disabled(runner.running)
             }
-            Picker("Model", selection: $runner.generatorKey) {
+            Picker("Model", selection: $store.generatorKey) {
                 ForEach(ModelCatalog.generators) { m in
                     Text("\(m.displayName) · ~\(String(format: "%.1f", m.approxSizeGB)) GB").tag(m.key)
                 }
             }
             .disabled(runner.running)
+            if store.remoteReady {
+                Label("Hybrid: remote judge enabled", systemImage: "network")
+                    .font(.caption).foregroundStyle(.tint)
+            }
 
             Stepper("Hypotheses: \(runner.hypothesesPerGeneration)",
                 value: $runner.hypothesesPerGeneration, in: 2...12).disabled(runner.running)
