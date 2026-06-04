@@ -1,11 +1,14 @@
-# xcodegen spec for the iOS validation app. Generate with:
+# xcodegen spec for the demo apps. Generate with:
 #   xcodegen generate
 # (The .xcodeproj is gitignored; this spec is the source of truth.)
+#   CoScientistApp     — iOS validation app (ios/App)
+#   CoScientistDemo    — macOS playground: live, on-device full workflow (macos/App)
 name: CoScientistApp
 options:
   bundleIdPrefix: studio.khaos.coscientist
   deploymentTarget:
     iOS: "17.0"
+    macOS: "14.0"
   createIntermediateGroups: true
 settings:
   base:
@@ -32,6 +35,31 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         TARGETED_DEVICE_FAMILY: "1,2"
+    dependencies:
+      - package: coscientist-mlx
+        product: AICoScientistKit
+      - package: coscientist-mlx
+        product: AICoScientistMLX
+
+  CoScientistDemo:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - macos/App
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: studio.khaos.coscientist.demo
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: CoScientist
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        # Local demo: not sandboxed, so it can reach Hugging Face and use the model cache.
+        ENABLE_APP_SANDBOX: NO
+        # Ad-hoc signing — builds/runs locally without a Mac Development certificate.
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGNING_REQUIRED: "NO"
+        DEVELOPMENT_TEAM: ""
     dependencies:
       - package: coscientist-mlx
         product: AICoScientistKit
