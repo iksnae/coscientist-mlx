@@ -7,11 +7,25 @@ import SwiftUI
 /// and metrics updating in real time. Export the finished run as JSON or Markdown.
 struct PlaygroundView: View {
     @State private var runner = WorkflowRunner()
+    @State private var rightPane: RightPane = .hypotheses
+
+    private enum RightPane: String, CaseIterable { case hypotheses = "Hypotheses", charts = "Charts" }
 
     var body: some View {
         HSplitView {
             controls.frame(minWidth: 320, maxWidth: 400)
-            hypothesesList.frame(minWidth: 520)
+            VStack(spacing: 0) {
+                Picker("View", selection: $rightPane) {
+                    ForEach(RightPane.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented).labelsHidden().padding(8)
+                Divider()
+                switch rightPane {
+                case .hypotheses: hypothesesList
+                case .charts: ChartsView(timeline: runner.timeline, hypotheses: runner.hypotheses)
+                }
+            }
+            .frame(minWidth: 520)
         }
         .frame(minWidth: 920, minHeight: 600)
     }
