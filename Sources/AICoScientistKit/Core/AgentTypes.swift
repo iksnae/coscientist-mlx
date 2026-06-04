@@ -111,6 +111,9 @@ public struct WorkflowResult: Codable, Sendable {
     public var metrics: ExecutionMetrics
     public var totalWorkflowTime: TimeInterval
     public var errors: [String]
+    /// Raw model interactions, when a `Transcript` was provided (the typed equivalent of the
+    /// reference's `conversation_history`). Empty otherwise.
+    public var transcript: [TranscriptEntry]
 
     public init(
         topRankedHypotheses: [Hypothesis] = [],
@@ -118,7 +121,8 @@ public struct WorkflowResult: Codable, Sendable {
         clusters: [SimilarityCluster] = [],
         metrics: ExecutionMetrics = ExecutionMetrics(),
         totalWorkflowTime: TimeInterval = 0,
-        errors: [String] = []
+        errors: [String] = [],
+        transcript: [TranscriptEntry] = []
     ) {
         self.topRankedHypotheses = topRankedHypotheses
         self.metaReviewSummary = metaReviewSummary
@@ -126,6 +130,7 @@ public struct WorkflowResult: Codable, Sendable {
         self.metrics = metrics
         self.totalWorkflowTime = totalWorkflowTime
         self.errors = errors
+        self.transcript = transcript
     }
 }
 

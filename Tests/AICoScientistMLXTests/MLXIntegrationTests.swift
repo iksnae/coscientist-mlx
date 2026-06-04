@@ -4,7 +4,7 @@ import Testing
 
 @testable import AICoScientistMLX
 
-// Opt-in real-model integration tests (RUN_MLX_INTEGRATION=1).
+// Opt-in real-model integration tests (RUN_MLX_INTEGRATION=1). See .claude/skills/mlx-swift.
 
 /// Real-model integration tests. These download a model (~4.5 GB) and run on the GPU, so
 /// they are OPT-IN: set `RUN_MLX_INTEGRATION=1` to enable. Normal `swift test` and CI skip

@@ -106,6 +106,28 @@ struct EngineTests {
         #expect(result.metrics.decodeFailures == 0)
     }
 
+    @Test("Records per-phase timing for every phase")
+    func perPhaseTiming() async {
+        let result = await smallEngine(model: ScriptedModel()).run(researchGoal: "g")
+        let keys = Set(result.metrics.agentExecutionTimes.keys)
+        #expect(keys.isSuperset(of: [
+            "generation", "reflection", "ranking", "tournament",
+            "metaReview", "evolution", "proximity", "total",
+        ]))
+    }
+
+    @Test("Folds the transcript into the result when provided")
+    func transcriptFolded() async {
+        let transcript = Transcript()
+        let engine = CoScientistEngine(
+            decoder: SchemaConstrainedDecoder(model: ScriptedModel(), transcript: transcript),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            seed: 5, transcript: transcript)
+        let result = await engine.run(researchGoal: "g")
+        #expect(!result.transcript.isEmpty)
+        #expect(result.transcript.contains { $0.system.contains("Generation Agent") })
+    }
+
     @Test("Folds decode failures when the model can't produce valid JSON")
     func telemetryFailures() async {
         let metrics = DecodeMetrics()

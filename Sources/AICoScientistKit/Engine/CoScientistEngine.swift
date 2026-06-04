@@ -15,6 +15,7 @@ public actor CoScientistEngine {
     private let proximityAnalyzer: any ProximityAnalyzer
     private let config: EngineConfiguration
     private let decodeMetrics: DecodeMetrics?
+    private let transcript: Transcript?
     private var rng: SeededGenerator
 
     private var hypotheses: [Hypothesis] = []
@@ -31,12 +32,14 @@ public actor CoScientistEngine {
         config: EngineConfiguration = .init(),
         seed: UInt64? = nil,
         proximityAnalyzer: (any ProximityAnalyzer)? = nil,
-        decodeMetrics: DecodeMetrics? = nil
+        decodeMetrics: DecodeMetrics? = nil,
+        transcript: Transcript? = nil
     ) {
         self.decoder = decoder
         self.proximityAnalyzer = proximityAnalyzer ?? AgentProximityAnalyzer(decoder: decoder)
         self.config = config
         self.decodeMetrics = decodeMetrics
+        self.transcript = transcript
         self.rng = SeededGenerator(seed: seed ?? UInt64.random(in: .min ... .max))
     }
 
@@ -46,20 +49,21 @@ public actor CoScientistEngine {
         let start = clock.now
         reset()
 
-        await generationPhase(goal: goal)
-        await reflectionPhase(goal: goal)
-        rankingPhase()
-        await tournamentPhase(goal: goal)
+        await timed("generation") { await self.generationPhase(goal: goal) }
+        await timed("reflection") { await self.reflectionPhase(goal: goal) }
+        await timed("ranking") { self.rankingPhase() }
+        await timed("tournament") { await self.tournamentPhase(goal: goal) }
 
         var metaSummary = ""
         for _ in 0..<max(0, config.maxIterations) {
-            let meta = await metaReviewPhase()
+            var meta: MetaReview?
+            await timed("metaReview") { meta = await self.metaReviewPhase() }
             if let meta { metaSummary = meta.metaReviewSummary }
-            await evolutionPhase(meta: meta)
-            await reflectionPhase(goal: goal)
-            rankingPhase()
-            await tournamentPhase(goal: goal)
-            await proximityPhase()
+            await timed("evolution") { await self.evolutionPhase(meta: meta) }
+            await timed("reflection") { await self.reflectionPhase(goal: goal) }
+            await timed("ranking") { self.rankingPhase() }
+            await timed("tournament") { await self.tournamentPhase(goal: goal) }
+            await timed("proximity") { await self.proximityPhase() }
         }
 
         if let snapshot = await decodeMetrics?.snapshot() {
@@ -76,7 +80,8 @@ public actor CoScientistEngine {
             clusters: clusters,
             metrics: metrics,
             totalWorkflowTime: seconds(since: start, clock: clock),
-            errors: errors
+            errors: errors,
+            transcript: await transcript?.all() ?? []
         )
     }
 
@@ -210,6 +215,15 @@ public actor CoScientistEngine {
         var j = Int.random(in: 0..<count, using: &rng)
         while j == i { j = Int.random(in: 0..<count, using: &rng) }
         return (i, j)
+    }
+
+    /// Run a phase, accumulating its wall-clock time under `name` (phases repeat across
+    /// iterations, so times sum) — mirroring the reference's per-agent timing.
+    private func timed(_ name: String, _ body: () async -> Void) async {
+        let clock = ContinuousClock()
+        let start = clock.now
+        await body()
+        metrics.agentExecutionTimes[name, default: 0] += seconds(since: start, clock: clock)
     }
 
     private func seconds(since start: ContinuousClock.Instant, clock: ContinuousClock) -> TimeInterval {
