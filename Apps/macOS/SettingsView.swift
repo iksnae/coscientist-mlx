@@ -25,8 +25,25 @@ private struct ModelsSettings: View {
                 Picker("Generator", selection: $store.generatorKey) {
                     ForEach(ModelCatalog.generators) { Text($0.displayName).tag($0.key) }
                 }
+                .disabled(store.backend == .foundation)
                 Picker("Embedder", selection: $store.embedderKey) {
                     ForEach(ModelCatalog.embedders) { Text($0.displayName).tag($0.key) }
+                }
+            }
+
+            Section("Inference backend") {
+                Picker("Generator backend", selection: $store.backend) {
+                    Text("MLX (open models)").tag(InferenceBackend.mlx)
+                    Text("Apple Foundation Models").tag(InferenceBackend.foundation)
+                }
+                .pickerStyle(.radioGroup)
+                if store.backend == .foundation && !store.foundationAvailable {
+                    Text("Apple Foundation Models isn't available on this device "
+                        + "(needs Apple Intelligence on macOS 26+). MLX is used until then.")
+                        .font(.caption).foregroundStyle(.orange)
+                } else if store.backend == .foundation {
+                    Text("Generation runs on Apple's on-device model; embeddings stay on MLX.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
             }
 

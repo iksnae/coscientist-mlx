@@ -1,8 +1,11 @@
+import AICoScientistFoundationModels
 import AICoScientistKit
 import AICoScientistMLX
 import AICoScientistRemote
 import ArgumentParser
 import Foundation
+
+extension InferenceBackend: ExpressibleByArgument {}
 
 @main
 struct AICoScientistCommand: AsyncParsableCommand {
@@ -35,6 +38,9 @@ struct AICoScientistCommand: AsyncParsableCommand {
     @Option(name: .customLong("model"),
         help: "Local generator: a catalog key (e.g. qwen3-4b) or HF repo id. See --list-models.")
     var modelKey: String?
+
+    @Option(help: "Generator backend: mlx (default) or foundation (Apple on-device, where available).")
+    var backend: InferenceBackend = .mlx
 
     @Flag(help: "List the curated model catalog and exit.")
     var listModels = false
@@ -122,9 +128,23 @@ struct AICoScientistCommand: AsyncParsableCommand {
             + AgentRole.allCases.map(\.rawValue).joined(separator: ", ") + ")")
     }
 
+    /// The generator backend: Apple Foundation Models when requested + available, else MLX.
+    private func loadGenerator() async throws -> any LanguageModel {
+        let effective = InferenceBackend.resolve(
+            requested: backend, foundationAvailable: FoundationModelsBackend.isAvailable)
+        if effective == .foundation, let fm = FoundationModelsBackend.makeModel() {
+            print("Backend: Apple Foundation Models (on-device).")
+            return fm
+        }
+        if backend == .foundation {
+            print("Foundation Models unavailable — falling back to MLX.")
+        }
+        return try await MLXLanguageModel.load(modelKey ?? ModelCatalog.defaultGeneratorKey)
+    }
+
     private func runProbe() async throws {
         print("Loading local model (first run downloads from Hugging Face)…")
-        let llm = try await MLXLanguageModel.load(modelKey ?? ModelCatalog.defaultGeneratorKey)
+        let llm = try await loadGenerator()
         let reply = try await llm.generateText(
             system: "You are a terse scientific assistant. Propose one concise, testable hypothesis.",
             user: goal,
@@ -135,7 +155,7 @@ struct AICoScientistCommand: AsyncParsableCommand {
 
     private func runWorkflow() async throws {
         print("Loading local models (first run downloads from Hugging Face)…")
-        let llm = try await MLXLanguageModel.load(modelKey ?? ModelCatalog.defaultGeneratorKey)
+        let llm = try await loadGenerator()
         let embedder = try await MLXEmbeddingModel.load()
         let decodeMetrics = DecodeMetrics()
         let localDecoder = SchemaConstrainedDecoder(model: llm, metrics: decodeMetrics)

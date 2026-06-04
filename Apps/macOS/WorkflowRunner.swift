@@ -1,3 +1,4 @@
+import AICoScientistFoundationModels
 import AICoScientistKit
 import AICoScientistMLX
 import AICoScientistRemote
@@ -69,8 +70,15 @@ final class WorkflowRunner {
 
         let settings = SettingsStore.shared
         do {
-            let model = try await MLXLanguageModel.load(study.generatorKey) { [weak self] fraction in
-                Task { @MainActor in self?.downloadProgress = fraction }
+            let model: any LanguageModel
+            let effectiveBackend = InferenceBackend.resolve(
+                requested: settings.backend, foundationAvailable: FoundationModelsBackend.isAvailable)
+            if effectiveBackend == .foundation, let fm = FoundationModelsBackend.makeModel() {
+                model = fm  // on-device Apple model; no download
+            } else {
+                model = try await MLXLanguageModel.load(study.generatorKey) { [weak self] fraction in
+                    Task { @MainActor in self?.downloadProgress = fraction }
+                }
             }
             let embedder = try await MLXEmbeddingModel.load(settings.embedderKey) { [weak self] fraction in
                 Task { @MainActor in self?.downloadProgress = fraction }

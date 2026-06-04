@@ -1,3 +1,4 @@
+import AICoScientistFoundationModels
 import AICoScientistKit
 import AICoScientistRemote
 import Foundation
@@ -15,6 +16,8 @@ final class SettingsStore {
 
     var generatorKey: String { didSet { defaults.set(generatorKey, forKey: "generatorKey") } }
     var embedderKey: String { didSet { defaults.set(embedderKey, forKey: "embedderKey") } }
+    /// Generator backend: MLX (default) or Apple Foundation Models (where available).
+    var backend: InferenceBackend { didSet { defaults.set(backend.rawValue, forKey: "backend") } }
     var remoteEnabled: Bool { didSet { defaults.set(remoteEnabled, forKey: "remoteEnabled") } }
     var remoteBaseURL: String { didSet { defaults.set(remoteBaseURL, forKey: "remoteBaseURL") } }
     var remoteModel: String { didSet { defaults.set(remoteModel, forKey: "remoteModel") } }
@@ -39,9 +42,13 @@ final class SettingsStore {
     /// Whether a usable remote judge is configured.
     var remoteReady: Bool { remoteEnabled && !openAIKey.isEmpty && !remoteModel.isEmpty }
 
+    /// Whether Apple Foundation Models is usable on this device right now.
+    var foundationAvailable: Bool { FoundationModelsBackend.isAvailable }
+
     private init() {
         generatorKey = defaults.string(forKey: "generatorKey") ?? ModelCatalog.defaultGeneratorKey
         embedderKey = defaults.string(forKey: "embedderKey") ?? ModelCatalog.defaultEmbedderKey
+        backend = InferenceBackend(rawValue: defaults.string(forKey: "backend") ?? "") ?? .mlx
         agentModels = defaults.dictionary(forKey: "agentModels") as? [String: String] ?? [:]
         remoteEnabled = defaults.bool(forKey: "remoteEnabled")
         remoteBaseURL = defaults.string(forKey: "remoteBaseURL") ?? "https://api.openai.com/v1"
