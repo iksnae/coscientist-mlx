@@ -34,6 +34,23 @@ private struct BrokenModel: LanguageModel {
     }
 }
 
+/// Counts how many decodes flow through it — used to prove per-role routing.
+private actor CallCounter {
+    private(set) var count = 0
+    func bump() { count += 1 }
+}
+
+private struct CountingDecoder: SchemaConstrainedDecoding {
+    let inner: SchemaConstrainedDecoder
+    let counter: CallCounter
+    func decode<T>(
+        _ type: T.Type, system: String, user: String, config: GenerationConfig
+    ) async throws -> T where T: Decodable & Sendable & Schematized {
+        await counter.bump()
+        return try await inner.decode(type, system: system, user: user, config: config)
+    }
+}
+
 @Suite("CoScientistEngine")
 struct EngineTests {
 
@@ -104,6 +121,29 @@ struct EngineTests {
         let result = await engine.run(researchGoal: "g")
         #expect(result.metrics.repairAttempts == 0)
         #expect(result.metrics.decodeFailures == 0)
+    }
+
+    @Test("Routes each role to its decoder (tournament → override, rest → default)")
+    func perRoleRouting() async {
+        let tournamentCounter = CallCounter()
+        let defaultCounter = CallCounter()
+        let router = RoleDecoderRouter(
+            default: CountingDecoder(
+                inner: SchemaConstrainedDecoder(model: ScriptedModel()), counter: defaultCounter),
+            overrides: [
+                .tournament: CountingDecoder(
+                    inner: SchemaConstrainedDecoder(model: ScriptedModel()), counter: tournamentCounter)
+            ])
+        let engine = CoScientistEngine(
+            router: router,
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            seed: 9)
+        _ = await engine.run(researchGoal: "g")
+
+        // Initial tournament: 2 hypotheses × 3 rounds = 6 (post-evolution pool of 1 skips).
+        #expect(await tournamentCounter.count == 6)
+        // gen 1 + reflection 2 + meta 1 + evolution 1 + reflection 1 + proximity 1 = 7.
+        #expect(await defaultCounter.count == 7)
     }
 
     @Test("Records per-phase timing for every phase")
