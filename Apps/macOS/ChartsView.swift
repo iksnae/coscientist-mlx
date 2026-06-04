@@ -9,15 +9,15 @@ struct ChartsView: View {
     let hypotheses: [Hypothesis]
 
     var body: some View {
-        if timeline.isEmpty {
+        if timeline.isEmpty && hypotheses.isEmpty {
             ContentUnavailableView(
                 "No data yet", systemImage: "chart.xyaxis.line",
-                description: Text("Run the workflow to chart Elo progression and the live ranking."))
+                description: Text("Run the study to chart Elo progression and the ranking."))
         } else {
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
-                    eloProgression
-                    currentRanking
+                    if !timeline.isEmpty { eloProgression }
+                    if !hypotheses.isEmpty { currentRanking }
                 }
                 .padding()
             }

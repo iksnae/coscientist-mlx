@@ -1,12 +1,14 @@
+import SwiftData
 import SwiftUI
 
 @main
 struct CoScientistDemoApp: App {
     var body: some Scene {
         WindowGroup("CoScientist") {
-            PlaygroundView()
+            StudiesView()
         }
-        .defaultSize(width: 960, height: 620)
+        .defaultSize(width: 1040, height: 680)
+        .modelContainer(for: Study.self)
 
         Settings {
             SettingsView()

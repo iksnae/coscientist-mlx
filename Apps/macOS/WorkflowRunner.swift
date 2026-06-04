@@ -3,18 +3,15 @@ import AICoScientistMLX
 import AICoScientistRemote
 import Foundation
 import Observation
+import SwiftData
 
-/// Drives a workflow run and publishes live, granular state to SwiftUI. The engine's
-/// `onProgress` callback (invoked off the main actor, per phase and per sub-step) hops back
-/// here to update the UI as each review/match/evolution lands.
+/// Coordinates the single active run and publishes live, granular state to SwiftUI. One run at
+/// a time; the detail view shows live state only while `runningStudyID` matches the study it's
+/// displaying. On completion the result is persisted back onto the `Study`.
 @MainActor
 @Observable
 final class WorkflowRunner {
-    var goal = "Improve lithium-ion battery energy density"
-    var hypothesesPerGeneration = 4
-    var iterations = 1
-
-    private(set) var running = false
+    private(set) var runningStudyID: UUID?
     private(set) var status = "Idle"
     private(set) var phase = ""
     private(set) var detail = ""
@@ -27,7 +24,8 @@ final class WorkflowRunner {
     private(set) var downloadProgress: Double?
     private(set) var timeline: [ProgressPoint] = []
 
-    /// A point in the run's Elo timeline, captured after each phase/sub-step.
+    private var task: Task<Void, Never>?
+
     struct ProgressPoint: Identifiable, Sendable {
         let id = UUID()
         let step: Int
@@ -37,52 +35,43 @@ final class WorkflowRunner {
         let poolSize: Int
     }
 
-    private var lastResult: WorkflowResult?
-    private var task: Task<Void, Never>?
-
-    /// Progress within the current phase (0…1), or nil when there's nothing countable.
+    var running: Bool { runningStudyID != nil }
     var phaseFraction: Double? { total > 0 ? Double(completed) / Double(total) : nil }
 
-    /// A completed run is available to export.
-    var canExport: Bool { lastResult != nil && !running }
+    func isRunning(_ study: Study) -> Bool { runningStudyID == study.id }
 
-    /// Start a run (no-op if one is in flight). Held as a Task so it can be cancelled.
-    func start() {
-        guard !running else { return }
-        task = Task { await self.run() }
+    /// Disk decisions for this study's models (so the UI can confirm or block before download).
+    func downloadPlan(for study: Study) -> [(name: String, decision: DownloadGuard.Decision)] {
+        [study.generatorKey, SettingsStore.shared.embedderKey].map { key in
+            (ModelCatalog.model(key: key)?.displayName ?? key, DownloadGuard.decide(forKeyOrID: key))
+        }
     }
 
-    /// Request cancellation of the in-flight run.
+    func start(study: Study, context: ModelContext) {
+        guard runningStudyID == nil else { return }
+        runningStudyID = study.id
+        let id = study.id
+        task = Task { await self.run(study: study, context: context, id: id) }
+    }
+
     func cancel() {
         task?.cancel()
         status = "Cancelling…"
     }
 
-    private func run() async {
-        running = true
+    private func run(study: Study, context: ModelContext, id: UUID) async {
         status = "Loading models (first run downloads from Hugging Face)…"
         phase = ""; detail = ""; completed = 0; total = 0
         hypotheses = []; errors = []; activity = []; metrics = ExecutionMetrics()
-        timeline = []; lastResult = nil; downloadProgress = nil
+        timeline = []; downloadProgress = nil
+        study.status = .running
 
-        let store = SettingsStore.shared
-
-        // Disk guard: refuse to start a download that the disk can't hold (a truncated
-        // download yields a corrupt, unloadable model).
-        for key in [store.generatorKey, store.embedderKey] {
-            if case let .insufficientDisk(needed, free) = DownloadGuard.decide(forKeyOrID: key) {
-                status = "Not enough disk to download \(key): need ~\(gb(needed)), \(gb(free)) free. "
-                    + "Free space (Settings ▸ Models) or pick a smaller model."
-                running = false
-                return
-            }
-        }
-
+        let settings = SettingsStore.shared
         do {
-            let model = try await MLXLanguageModel.load(store.generatorKey) { [weak self] fraction in
+            let model = try await MLXLanguageModel.load(study.generatorKey) { [weak self] fraction in
                 Task { @MainActor in self?.downloadProgress = fraction }
             }
-            let embedder = try await MLXEmbeddingModel.load(store.embedderKey) { [weak self] fraction in
+            let embedder = try await MLXEmbeddingModel.load(settings.embedderKey) { [weak self] fraction in
                 Task { @MainActor in self?.downloadProgress = fraction }
             }
             downloadProgress = nil
@@ -90,9 +79,9 @@ final class WorkflowRunner {
             let localDecoder = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
 
             let router: any DecoderRouting
-            if store.remoteReady, let baseURL = URL(string: store.remoteBaseURL) {
+            if study.useRemoteJudge, settings.remoteReady, let baseURL = URL(string: settings.remoteBaseURL) {
                 let remote = RemoteLanguageModel(
-                    model: store.remoteModel, apiKey: store.openAIKey, baseURL: baseURL)
+                    model: settings.remoteModel, apiKey: settings.openAIKey, baseURL: baseURL)
                 let remoteDecoder = SchemaConstrainedDecoder(model: remote, metrics: decodeMetrics)
                 router = RoleDecoderRouter(
                     default: localDecoder,
@@ -104,40 +93,37 @@ final class WorkflowRunner {
             let engine = CoScientistEngine(
                 router: router,
                 config: .init(
-                    maxIterations: iterations, hypothesesPerGeneration: hypothesesPerGeneration),
+                    maxIterations: study.iterations,
+                    hypothesesPerGeneration: study.hypothesesPerGeneration),
                 proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder),
                 decodeMetrics: decodeMetrics)
 
             status = "Running…"
-            let result = await engine.run(researchGoal: goal) { [weak self] progress in
+            let result = await engine.run(researchGoal: study.goal) { [weak self] progress in
                 Task { @MainActor in self?.apply(progress) }
             }
 
             hypotheses = result.topRankedHypotheses
             metrics = result.metrics
             errors = result.errors
-            lastResult = result
-            phase = "done"; detail = ""; completed = 0; total = 0
             let cancelled = result.errors.contains { $0.localizedCaseInsensitiveContains("cancel") }
+            phase = "done"; detail = ""; completed = 0; total = 0
             status = cancelled
                 ? "Cancelled · \(result.topRankedHypotheses.count) hypotheses so far"
                 : String(
                     format: "Done · %.1fs · %d repairs · %d decode failures",
                     result.totalWorkflowTime, result.metrics.repairAttempts,
                     result.metrics.decodeFailures)
+
+            study.snapshot = RunSnapshot(researchGoal: study.goal, result: result)
+            study.status = cancelled ? .draft : .done
         } catch {
             status = "Error: \(error)"
+            study.status = .error
         }
-        running = false
-    }
-
-    private func gb(_ bytes: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
-    }
-
-    /// Build an exportable snapshot of the most recent run.
-    func makeSnapshot() -> RunSnapshot? {
-        lastResult.map { RunSnapshot(researchGoal: goal, result: $0) }
+        study.updatedAt = Date()
+        try? context.save()
+        if runningStudyID == id { runningStudyID = nil }
     }
 
     private func apply(_ progress: WorkflowProgress) {
@@ -157,8 +143,7 @@ final class WorkflowRunner {
             let elos = progress.hypotheses.map(\.eloRating)
             timeline.append(
                 ProgressPoint(
-                    step: timeline.count,
-                    phase: progress.phase,
+                    step: timeline.count, phase: progress.phase,
                     topElo: elos.max() ?? 1200,
                     avgElo: Double(elos.reduce(0, +)) / Double(elos.count),
                     poolSize: elos.count))
