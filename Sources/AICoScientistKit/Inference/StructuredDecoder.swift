@@ -16,11 +16,18 @@ public struct LanguageModelStructuredDecoder: StructuredDecoder {
     private let model: LanguageModel
     private let maxRepairAttempts: Int
     private let metrics: DecodeMetrics?
+    private let transcript: Transcript?
 
-    public init(model: LanguageModel, maxRepairAttempts: Int = 1, metrics: DecodeMetrics? = nil) {
+    public init(
+        model: LanguageModel,
+        maxRepairAttempts: Int = 1,
+        metrics: DecodeMetrics? = nil,
+        transcript: Transcript? = nil
+    ) {
         self.model = model
         self.maxRepairAttempts = max(0, maxRepairAttempts)
         self.metrics = metrics
+        self.transcript = transcript
     }
 
     public func decode<T: Decodable & Sendable>(
@@ -32,6 +39,7 @@ public struct LanguageModelStructuredDecoder: StructuredDecoder {
 
         for attempt in 0...maxRepairAttempts {
             let raw = try await model.generateText(system: system, user: prompt, config: config)
+            await transcript?.record(system: system, user: prompt, response: raw)
 
             if let json = JSONExtraction.extractObject(from: raw),
                let value = try? JSONDecoder().decode(T.self, from: Data(json.utf8)) {

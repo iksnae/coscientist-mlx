@@ -76,6 +76,13 @@ struct AICoScientistCommand: AsyncParsableCommand {
             + "matches=\(result.metrics.tournamentsCount) evolutions=\(result.metrics.evolutionsCount) "
             + "repairs=\(result.metrics.repairAttempts) decodeFailures=\(result.metrics.decodeFailures)")
         print(String(format: "time=%.1fs", result.totalWorkflowTime))
+        let phaseTimes = result.metrics.agentExecutionTimes
+            .filter { $0.key != "total" }
+            .sorted { $0.value > $1.value }
+        if !phaseTimes.isEmpty {
+            print("phase times: "
+                + phaseTimes.map { String(format: "%@=%.1fs", $0.key, $0.value) }.joined(separator: " "))
+        }
         if !result.errors.isEmpty {
             print("\n--- Errors (\(result.errors.count)) ---")
             result.errors.forEach { print("• \($0)") }
