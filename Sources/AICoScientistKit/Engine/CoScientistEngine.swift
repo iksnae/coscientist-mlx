@@ -78,29 +78,40 @@ public actor CoScientistEngine {
         reset()
         self.onProgress = onProgress
 
-        await timed("generation") { await self.generationPhase(goal: goal) }
-        await timed("reflection") { await self.reflectionPhase(goal: goal) }
-        await timed("ranking") { self.rankingPhase() }
-        await timed("tournament") { await self.tournamentPhase(goal: goal) }
-
         var metaSummary = ""
-        for _ in 0..<max(0, config.maxIterations) {
-            iteration += 1
+        if !Task.isCancelled { await timed("generation") { await self.generationPhase(goal: goal) } }
+        if !Task.isCancelled { await timed("reflection") { await self.reflectionPhase(goal: goal) } }
+        if !Task.isCancelled { await timed("ranking") { self.rankingPhase() } }
+        if !Task.isCancelled { await timed("tournament") { await self.tournamentPhase(goal: goal) } }
+
+        var iter = 0
+        while iter < max(0, config.maxIterations), !Task.isCancelled {
+            iter += 1
+            iteration = iter
             var meta: MetaReview?
             await timed("metaReview") { meta = await self.metaReviewPhase() }
             if let meta { metaSummary = meta.metaReviewSummary }
+            if Task.isCancelled { break }
             await timed("evolution") { await self.evolutionPhase(meta: meta) }
             await timed("reflection") { await self.reflectionPhase(goal: goal) }
             await timed("ranking") { self.rankingPhase() }
+            if Task.isCancelled { break }
             await timed("tournament") { await self.tournamentPhase(goal: goal) }
             await timed("proximity") { await self.proximityPhase() }
         }
 
+        return await finish(start: start, clock: clock, metaSummary: metaSummary)
+    }
+
+    /// Build the final result (also used on cancellation, with whatever's been computed).
+    private func finish(
+        start: ContinuousClock.Instant, clock: ContinuousClock, metaSummary: String
+    ) async -> WorkflowResult {
+        if Task.isCancelled { errors.append("run cancelled") }
         if let snapshot = await decodeMetrics?.snapshot() {
             metrics.repairAttempts = snapshot.repairs
             metrics.decodeFailures = snapshot.failures
         }
-
         let ranked = hypotheses.sorted { $0.eloRating > $1.eloRating }
         metrics.agentExecutionTimes["total"] = seconds(since: start, clock: clock)
 
@@ -133,6 +144,7 @@ public actor CoScientistEngine {
         let agent = ReflectionAgent()
         let n = hypotheses.count
         for i in hypotheses.indices {
+            if Task.isCancelled { break }
             do {
                 let review = try await agent.run(
                     .init(researchGoal: goal, hypothesisText: hypotheses[i].text),
@@ -159,6 +171,7 @@ public actor CoScientistEngine {
         let agent = TournamentAgent()
         let rounds = hypotheses.count * 3
         for round in 0..<rounds {
+            if Task.isCancelled { break }
             let (i, j) = pickTwoDistinct(in: hypotheses.count)
             var detail = "match \(round + 1)/\(rounds)"
             do {

@@ -24,8 +24,10 @@ final class WorkflowRunner {
     private(set) var metrics = ExecutionMetrics()
     private(set) var errors: [String] = []
     private(set) var activity: [String] = []
+    private(set) var downloadProgress: Double?
 
     private var lastResult: WorkflowResult?
+    private var task: Task<Void, Never>?
 
     /// Progress within the current phase (0…1), or nil when there's nothing countable.
     var phaseFraction: Double? { total > 0 ? Double(completed) / Double(total) : nil }
@@ -33,16 +35,33 @@ final class WorkflowRunner {
     /// A completed run is available to export.
     var canExport: Bool { lastResult != nil && !running }
 
-    func run() async {
+    /// Start a run (no-op if one is in flight). Held as a Task so it can be cancelled.
+    func start() {
+        guard !running else { return }
+        task = Task { await self.run() }
+    }
+
+    /// Request cancellation of the in-flight run.
+    func cancel() {
+        task?.cancel()
+        status = "Cancelling…"
+    }
+
+    private func run() async {
         running = true
         status = "Loading models (first run downloads from Hugging Face)…"
         phase = ""; detail = ""; completed = 0; total = 0
         hypotheses = []; errors = []; activity = []; metrics = ExecutionMetrics()
-        lastResult = nil
+        lastResult = nil; downloadProgress = nil
 
         do {
-            let model = try await MLXLanguageModel.load(generatorKey)
-            let embedder = try await MLXEmbeddingModel.load()
+            let model = try await MLXLanguageModel.load(generatorKey) { [weak self] fraction in
+                Task { @MainActor in self?.downloadProgress = fraction }
+            }
+            let embedder = try await MLXEmbeddingModel.load { [weak self] fraction in
+                Task { @MainActor in self?.downloadProgress = fraction }
+            }
+            downloadProgress = nil
             let decodeMetrics = DecodeMetrics()
             let engine = CoScientistEngine(
                 decoder: SchemaConstrainedDecoder(model: model, metrics: decodeMetrics),
@@ -61,10 +80,13 @@ final class WorkflowRunner {
             errors = result.errors
             lastResult = result
             phase = "done"; detail = ""; completed = 0; total = 0
-            status = String(
-                format: "Done · %.1fs · %d repairs · %d decode failures",
-                result.totalWorkflowTime, result.metrics.repairAttempts,
-                result.metrics.decodeFailures)
+            let cancelled = result.errors.contains { $0.localizedCaseInsensitiveContains("cancel") }
+            status = cancelled
+                ? "Cancelled · \(result.topRankedHypotheses.count) hypotheses so far"
+                : String(
+                    format: "Done · %.1fs · %d repairs · %d decode failures",
+                    result.totalWorkflowTime, result.metrics.repairAttempts,
+                    result.metrics.decodeFailures)
         } catch {
             status = "Error: \(error)"
         }
