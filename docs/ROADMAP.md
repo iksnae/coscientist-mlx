@@ -90,14 +90,19 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-A batch of milestones is drafted and dependency-sequenced after M6
-(`milestone-planner`, 2026-06-04):
+A batch of milestones is drafted and dependency-sequenced
+(`milestone-planner`, 2026-06-04; results-presentation UX pulled ahead of
+the Foundation Models + optimization work on operator signal):
 
-- **M8 — Foundation Models backend.** Apple's native tool calling as an
-  optional, availability-gated backend. *(in flight — `MILESTONE-8-PLAN.md`)*
-- **M9 — Graph selection + details inspector.** Click a node in the
-  graph view to inspect its underlying data. *(draft)*
-- **M10 — Inference optimization.** Prompt/KV cache reuse + quant tiers.
+- **M8 — Hypothesis selection + inspector.** Select a hypothesis (list +
+  graph) and inspect its full detail — reviews, score breakdown, record,
+  cluster, lineage. *(draft, next to grind)*
+- **M9 — Transparent activity.** Verbose, persisted activity feed with
+  per-phase icons, counts, tool calls, and inline animated sparklines.
+  *(draft)*
+- **M10 — Foundation Models backend.** Apple's native tool calling as an
+  optional, availability-gated backend. *(draft, deferred from M8)*
+- **M11 — Inference optimization.** Prompt/KV cache reuse + quant tiers.
   *(draft)*
 
 Further out (theme, not yet drafted):

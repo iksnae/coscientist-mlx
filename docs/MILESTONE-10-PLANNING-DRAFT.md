@@ -5,90 +5,87 @@ Date: 2026-06-04
 Working name:
 
 ```txt
-Inference optimization — prompt-cache reuse + quant tiers
+Apple Foundation Models backend (native tool calling)
 ```
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-10-PLAN.md.
+Draft. Not yet promoted to MILESTONE-10-PLAN.md. (Deferred from M8 when
+the results-presentation UX was reprioritized ahead of it on 2026-06-04.)
 
 ## Goal
 
-Pull the performance levers now that workflow parity holds. Reuse the
-constant per-agent system-prompt prefix across decode calls (KV/prompt
-cache) instead of re-encoding it every time, and expose quantization
-tiers from the model catalog so a user can trade speed/memory for quality.
-Success: a measurable wall-clock reduction on a real run, with the
-optimization logic factored behind testable seams and the default
-behavior unchanged in correctness.
+Add Apple's Foundation Models framework as an optional on-device backend
+that conforms to our `LanguageModel` seam and maps `AgentTool` to its
+native `Tool` calling. On an Apple-Intelligence device (OS 26+), agents
+can run on Apple's native stack with first-class tool calls — typically
+more reliable than M6's text-convention loop on small open models — while
+MLX stays the default and the backend is availability-gated so non-AI
+devices and CI are unaffected.
 
 ## Context
 
-The roadmap's "Optimization (orig. M7)" theme: *batched inference,
-prefix/KV cache reuse, quant tiers — performance levers now that parity
-holds.* Every agent has a constant `systemPrompt` (`Agent` protocol),
-re-sent on each decode; the MLX adapter
-(`Sources/AICoScientistMLX/MLXLanguageModel.swift`) currently does no
-prefix reuse. The catalog (`ModelCatalog`) already carries size/RAM
-metadata but exposes a single revision per model, not selectable quant
-tiers. This milestone is MLX-adapter-local plus a small catalog/config
-extension — it touches no agent logic and no engine shape.
+The agent-research arc named a Foundation Models backend as "Increment
+4." Apple's Foundation Models framework (OS 26) provides an on-device LLM
+via `LanguageModelSession`, guided generation, and a native `Tool`
+protocol — a direct analogue of the M6 tool-use seam. Adapters are
+already isolated behind protocols (`LanguageModel`,
+`SchemaConstrainedDecoding`), so FM slots in beside `AICoScientistMLX`
+without touching the engine, and M7's `RoleDecoderRouter` can already
+route a role to it. The `AgentTool` shape (PR #29) was designed to map to
+a native `Tool` — this milestone cashes that in.
 
 ## Usage Scenarios
 
-### Scenario 1: Faster repeated decodes
+### Scenario 1: Select the Apple backend where available
 
 Expected behavior:
 
-- Within a run, decodes that share an agent's system-prompt prefix reuse
-  a cached prefix rather than re-encoding it.
-- A real-model run reports lower total time than the pre-change baseline,
-  with identical hypothesis structure (correctness unchanged).
+- On a supported device, "Apple Foundation Models" is an offered backend
+  in the CLI (`--backend foundation`) and the app's picker.
+- On an unsupported device/OS, the option is absent (gracefully hidden),
+  and MLX remains the default — no crash, no error.
 
-### Scenario 2: Choose a quant tier
+### Scenario 2: Native tool calling
 
 Expected behavior:
 
-- `swift run aicoscientist --list-models` shows available quant tiers per
-  model; `--model <key>@<tier>` (or a tier flag) selects one.
-- The app's model picker offers the tiers; a smaller tier loads faster /
-  uses less RAM, surfaced via the existing size/RAM metadata.
+- When tools are enabled (M6), the FM backend exposes them as native
+  `Tool`s so the model calls them through Apple's runtime.
+- A scripted/mock seam verifies an `AgentTool` adapts to the native tool
+  shape and results round-trip.
 
 ## Primary Scope
 
-### Track A — Prompt/KV cache reuse (AICoScientistMLX)
+### Track A — AgentTool → native Tool mapping (new target AICoScientistFoundationModels)
 
-Add prefix-cache reuse keyed on the constant system prompt in the MLX
-decode path, so the per-agent prefix is encoded once and reused across
-that agent's calls within a run. The cache-management logic (key
-derivation, lifetime, eviction) is factored so it is unit-testable
-without a GPU; the actual MLX wiring stays inside the adapter.
+A pure adapter mapping `AgentTool` (name, description, `JSONSchema`,
+`call`) to the Foundation Models `Tool` shape, with result round-trip.
+Unit-tested via a seam/mock — no device dependency.
 
-### Track B — Quant tiers (AICoScientistKit catalog + surfaces)
+### Track B — Foundation Models LanguageModel adapter (same target)
 
-Extend `CatalogModel` to carry selectable quant tiers (each a pinned
-revision) and a resolver `key@tier → repo/revision`. Pure, mock-tested.
-Surface tier selection in the CLI (`--list-models` output + selection)
-and the app model picker.
+A `LanguageModel` conformance over `LanguageModelSession`, compiled behind
+`#if canImport(FoundationModels)` + `@available` gates so the package
+still builds where the framework is absent. Structured output routes
+through the existing `SchemaConstrainedDecoder` (one code path). Real
+inference is opt-in integration only.
 
-### Track C — Benchmark harness (opt-in)
+### Track C — Backend selection (AICoScientistCLI + Apps/macOS)
 
-A small opt-in benchmark (integration target, not default `swift test`)
-that runs a fixed goal and reports total time, so the speedup is
-measured, not asserted in a flaky unit test.
+A `--backend mlx|foundation` flag (default `mlx`) and an availability-gated
+picker entry; engine and agents unchanged.
 
 ## Definition Of Done
 
-- The cache-key/lifetime logic is unit-tested (pure, no GPU): the same
-  system prefix yields a cache hit; a different prefix does not.
-- The MLX decode path reuses the cached prefix within a run; correctness
-  of decoded output is unchanged vs. the no-cache path (mock seam +
-  opt-in real run).
-- `CatalogModel` resolves `key@tier` to a pinned repo/revision; unknown
-  tiers fall back to the default with a clear error (unit-tested).
-- CLI and app expose quant-tier selection; `--list-models` shows tiers.
-- The opt-in benchmark reports a baseline and post-change total time
-  (numbers recorded in the closeout, not asserted as a unit test).
+- The package builds on a toolchain without Foundation Models (gates
+  compile it out) and with it.
+- The `AgentTool` → native `Tool` mapping is unit-tested via a seam/mock
+  (no device): name, description, schema, result round-trip asserted.
+- `--backend foundation` selects the adapter where available, is hidden/
+  no-op where not; `--backend mlx` (default) unchanged.
+- MLX remains the default; no path makes Foundation Models required.
+- Real FM inference lives only in an opt-in integration path.
 - New behaviour is driven by a test written first (mock backend, no GPU).
 - `swift build` clean; `swift test` green.
 - `import MLX*` appears only under `Sources/AICoScientistMLX/`.
@@ -97,37 +94,26 @@ measured, not asserted in a flaky unit test.
 
 ## Non-Goals
 
-- Batched multi-hypothesis generation in one forward pass — a larger,
-  separate optimization; defer unless cache reuse underdelivers.
-- Cross-run/persistent cache on disk — in-run reuse only.
-- Changing default models or revisions — tiers are additive; the current
-  default stays the default.
-- Quality benchmarking of quant tiers — we expose tiers; evaluating their
-  quality belongs to the parity-test-harness theme.
+- Replacing the MLX path — FM is a fixed ~3B Apple model; MLX stays default.
+- iOS backend-selection UI beyond what falls out for free.
+- FM guided-generation rework — adapt through the existing decoder.
 
 ## Open Questions
 
-- **Cache invalidation granularity.** Per-agent-prefix is the safe,
-  high-value case; finer-grained shared-prefix reuse across agents risks
-  subtle correctness bugs. Lean per-agent prefix only.
-- **Tier syntax.** `key@tier` vs. a separate `--quant` flag. Lean
-  `key@tier` so one identifier carries the full selection (mirrors the
-  catalog key). Delivery detail.
+- **Structured output via FM.** Existing decoder first; revisit FM
+  guided-gen if materially better. Lean existing decoder.
 
 ## Risk
 
-- **Perf is hard to TDD.** Mitigate by unit-testing the pure cache-
-  management logic and the tier resolver, and measuring real speedup in
-  the opt-in benchmark (Track C) rather than a flaky timing assertion.
-- **Cache reuse silently changing output.** Mitigate by asserting decoded
-  output equality between cached and non-cached paths on the mock seam,
-  and an opt-in real-run spot check in the closeout.
+- **CI toolchain lacks Foundation Models.** The `canImport`/`@available`
+  gates must keep the default build/test green with the framework absent;
+  verify in CI.
+- **API churn / device access.** Keep real-device runs in the opt-in
+  integration path; unit-test only the adapter mapping.
 
 ## Scope Class
 
-Small-to-Medium. Track A's MLX cache wiring carries the only real
-complexity; the catalog tiers and surfaces are thin and reuse existing
-seams. Kept grindable by isolating cache logic behind a testable seam.
+Small. One gated adapter target + a thin selection flag; engine and agents
+untouched. Availability gating is the only fiddly part.
 
-Estimated 4–5 commits (Track A) + 2–3 (Track B) + 1–2 (Track C),
-~7–10 commits.
+Estimated 3–4 commits (Track A/B) + 2 (Track C), ~5–6 commits.

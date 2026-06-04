@@ -5,7 +5,7 @@ Date: 2026-06-04
 Working name:
 
 ```txt
-Graph node selection + details inspector
+Transparent activity — verbose feed with inline animated visuals
 ```
 
 ## Status
@@ -14,76 +14,77 @@ Draft. Not yet promoted to MILESTONE-9-PLAN.md.
 
 ## Goal
 
-Make the node-graph view (shipped in PR #28, `Apps/macOS/GraphView.swift`)
-interactive: click a node to select it and see its details in an inspector
-pane. A pipeline-operation node reveals its phase and timing; a hypothesis
-node reveals text, Elo, win rate, and cluster; a cluster hub reveals its
-members. The graph becomes a way to *explore* a run, not just look at it.
-
-## Operator signal
-
-Requested directly during batch planning ("Enable selection + details
-inspector in graph") — an addition to the agent-research and optimization
-themes, picking up the just-shipped Grape node graph.
+Surface what the pipeline is doing. Today activity is a plain monospace
+log buried in the 4th tab that only exists *while running* and vanishes
+afterward. M9 turns it into a transparent, structured **activity feed**:
+per-phase icons, counts, tool calls, and inline sparklines (Elo / pool
+size) with animated row insertion — and it is **persisted** so the feed
+is replayable after the run, not live-only.
 
 ## Context
 
-PR #28 added a Graph tab with a live-highlighted pipeline operation graph
-and an artifacts graph (hypotheses sized by Elo, linked to cluster hubs),
-both rendered with Grape. It is read-only — nodes can't be selected and
-there's no way to inspect a node's underlying data. All the data already
-exists in the run snapshot/artifacts consumed by the view; this milestone
-adds selection state and a detail surface over that existing data, with
-the graph-shaping logic extracted into a pure, testable model.
+Operator signal (2026-06-04): *"the activity is buried … make activity
+more transparent, like the activity feed but verbose and graphical
+visualization that animates state change."* Chosen direction: a
+feed-centric rich timeline with inline visuals (not a bespoke board, not
+graph animation). Today `WorkflowRunner.activity` is `[String]` built in
+`apply(_:)` from `WorkflowProgress` and shown live-only in
+`StudyDetailView.activityList`; `RunSnapshot` does not store it. The data
+to drive a rich feed already flows through `WorkflowProgress` (phase,
+iteration, detail, completed/total, hypotheses, metrics) and the runner's
+`timeline` (top/avg Elo, pool size).
 
 ## Usage Scenarios
 
-### Scenario 1: Inspect a hypothesis node
+### Scenario 1: Watch a run unfold
 
 Expected behavior:
 
-- Clicking a hypothesis node selects it (visually distinct) and opens an
-  inspector showing its text, Elo, win rate, and cluster id.
-- Clicking empty space (or a deselect affordance) clears the selection.
+- Each pipeline step appears as a feed row with a per-phase icon, a
+  human label, counts (e.g. "reflection 3/6"), and any tool calls
+  ("arxiv_search — …" from M6's hook).
+- Rows animate in; Elo/pool sparklines update inline as state changes.
 
-### Scenario 2: Inspect a pipeline operation / cluster hub
+### Scenario 2: Review activity after the run
 
 Expected behavior:
 
-- Selecting an operation node shows its phase name and recorded timing.
-- Selecting a cluster hub lists the hypotheses that belong to it.
-- The inspector reflects selection changes immediately; no run re-trigger.
+- After a completed (or cancelled) study, the activity feed is still
+  there — rebuilt from the persisted event log on the snapshot — so you
+  can scroll the full history, not just a live tail.
 
 ## Primary Scope
 
-### Track A — Pure graph + selection model (AICoScientistKit)
+### Track A — Structured, persisted activity model (AICoScientistKit)
 
-Extract the graph-building (RunSnapshot/artifacts → nodes + edges, with a
-node `kind`: operation / hypothesis / cluster) into a pure `RunGraph`
-model in the domain layer, plus a selection→inspector mapping (selected
-node id → a typed inspector view-model). Domain-only, MLX-free,
-unit-tested — this also retroactively makes the graph's data shape
-testable rather than buried in SwiftUI.
+A typed `ActivityEvent` (phase, iteration, detail, a `kind` for the icon,
+completed/total, optional tool-call label, optional metric deltas) and a
+builder that derives `[ActivityEvent]` from the progress stream. Persist
+the event log on `RunSnapshot` (optional/default-empty for back-compat),
+so the feed survives the run. Pure, MLX-free, unit-tested.
 
-### Track B — Interactive view + inspector (Apps/macOS)
+### Track B — Rich activity feed view (Apps/macOS)
 
-Add selection state to `GraphView` (tap to select, highlight the selected
-node, tap-away to clear) and an inspector pane that renders the Track A
-inspector model. SwiftUI stays thin — it consumes the pure model and
-holds only view state.
+Replace the plain `activityList` with a feed of typed rows: per-phase
+icon, label, counts, tool calls, and inline sparklines (reusing the
+Swift Charts work from `ChartsView`), with animated insertion. Make it
+prominent (default-select the tab when a run starts) and drive it from
+live events while running and from the persisted log afterward. The
+WorkflowRunner accumulates `[ActivityEvent]` (replacing the `[String]`
+log) and writes them onto the snapshot on completion.
 
 ## Definition Of Done
 
-- `RunGraph` builds typed nodes (operation / hypothesis / cluster) and
-  edges from a sample run snapshot (unit-tested, no UI).
-- The selection→inspector mapping returns the correct typed detail for
-  each node kind and `nil`/empty for no selection (unit-tested).
-- Clicking a node selects + highlights it; the inspector shows that
-  node's details; clicking away clears the selection (manual verify,
-  noted in closeout).
-- No engine or run behavior changes — graph data is derived, read-only.
-- New behaviour is driven by a test written first (mock backend, no GPU)
-  for the Track A model/mapping.
+- `ActivityEvent` + the builder derive a typed event list from a sequence
+  of `WorkflowProgress` values (phase/kind/counts/tool-call), unit-tested.
+- `RunSnapshot` round-trips its activity log through Codable; an old
+  snapshot without the field decodes to an empty log (back-compat),
+  unit-tested.
+- The activity feed renders typed rows with icons, counts, tool calls and
+  inline sparklines; rows animate in (manual verify, noted in closeout).
+- The feed is available after a run from the persisted log, not live-only.
+- No engine/run behavior changes beyond recording the event log.
+- New behaviour is driven by a test written first (mock backend, no GPU).
 - `swift build` clean; `swift test` green.
 - `import MLX*` appears only under `Sources/AICoScientistMLX/`.
 - `git diff --check` clean.
@@ -91,30 +92,32 @@ holds only view state.
 
 ## Non-Goals
 
-- iOS graph interactivity — macOS first; iOS can follow if wanted.
-- Editing/re-running from the graph — inspection only, no mutation.
-- Graph layout/algorithm changes — Grape layout stays as shipped.
-- Exporting the graph as an image — out of scope.
+- A bespoke animated hypothesis "board" or live graph animation — chosen
+  direction is the feed with inline visuals.
+- iOS activity feed — macOS first.
+- New telemetry the engine doesn't already emit — derive from existing
+  `WorkflowProgress`/metrics.
 
 ## Open Questions
 
-- **Where `RunGraph` lives.** Domain layer (Kit) makes it testable and
-  reusable across macOS/iOS; an app-local model would not be in the
-  `swift test` path. Lean Kit, so the DoD's test-first rule is honest.
-- **Inspector placement.** A trailing inspector pane vs. a popover on the
-  node. Lean a trailing pane (room for cluster member lists). Delivery
-  detail.
+- **Event granularity.** One event per progress callback vs. coalescing
+  per-match spam into a rolled-up "tournament round" row. Lean one event
+  per callback, with the `kind` driving compact rendering. Delivery detail.
+- **Sparkline placement.** Inline per-row vs. a sticky mini-chart header
+  over the feed. Lean a sticky header (Elo/pool) + compact per-row counts.
+  Delivery detail.
 
 ## Risk
 
-- **UI logic resisting TDD.** Pure SwiftUI is hard to unit-test.
-  Mitigate by pushing all derivable logic (graph build + selection
-  mapping) into the Track A pure model and keeping the view a thin
-  consumer — the testable surface is the model, not the view.
+- **Snapshot schema change.** Adding the activity log to `RunSnapshot`
+  must not break existing saved runs. Mitigate with an optional field
+  defaulting to empty + a decode test for the legacy shape.
+- **Feed volume.** Long runs emit many events. Mitigate by capping the
+  retained/rendered list (as the current log does) and noting any cap.
 
 ## Scope Class
 
-Small. One pure model extraction + a thin interactive view; no engine,
-adapter, or network work.
+Small. One pure event model + snapshot field + a richer feed view reusing
+existing charts; no engine, adapter, or network work.
 
-Estimated 3–4 commits (Track A) + 2–3 (Track B), ~5–7 commits.
+Estimated 3–4 commits (Track A) + 3–4 (Track B), ~6–8 commits.
