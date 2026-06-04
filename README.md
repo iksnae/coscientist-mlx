@@ -55,26 +55,9 @@ swift run aicoscientist "Improve lithium-ion energy density" --run --remote-judg
 Seven single-responsibility agents run in a *generate → debate → evolve* loop, with an
 Elo tournament for self-play ranking and embedding-based clustering for diversity:
 
-```mermaid
-flowchart TD
-    goal([Research goal]) --> gen
-    subgraph seed[Initial pass]
-        direction TB
-        gen[Generation<br/>propose hypotheses] --> ref1[Reflection<br/>peer review]
-        ref1 --> rank1[Ranking<br/>score and order]
-        rank1 --> tour1[Tournament<br/>Elo self-play]
-    end
-    tour1 --> loop
-    subgraph loop[Refinement loop x N]
-        direction TB
-        meta[Meta-Review<br/>synthesize insights] --> evo[Evolution<br/>refine top-k]
-        evo --> ref2[Reflection<br/>re-review]
-        ref2 --> rank2[Ranking<br/>re-rank]
-        rank2 --> tour2[Tournament<br/>Elo self-play]
-        tour2 --> prox[Proximity<br/>embedding clusters]
-    end
-    loop --> result([Top-ranked hypotheses<br/>+ meta-review + clusters])
-```
+<p align="center">
+  <img src="docs/assets/pipeline.png" alt="The seven-agent pipeline: an initial generation → reflection → ranking → tournament pass, then an N-times refinement loop of meta-review → evolution → reflection → ranking → tournament → proximity clustering." width="420" />
+</p>
 
 Each agent's role is documented in the
 [DocC site](https://iksnae.github.io/coscientist-mlx/documentation/aicoscientistkit/thesevenagents)
@@ -88,6 +71,23 @@ The Python original calls hosted LLM APIs and assumes the model returns valid JS
 port targets Apple Silicon with [MLX](https://github.com/ml-explore/mlx-swift): local,
 private, zero marginal cost — and aims to be *superior* via embedding-based proximity
 clustering, schema-constrained decoding, and batched inference. See the architecture doc.
+
+## Architecture
+
+The domain layer (`AICoScientistKit`) depends only on protocols, so the engine is MLX-free
+and unit-testable; the on-device (`AICoScientistMLX`) and hosted (`AICoScientistRemote`)
+adapters implement those seams and are routed per stage (Dependency Inversion):
+
+![Layering: the aicoscientist CLI drives the CoScientist Engine and seven agents inside AICoScientistKit, which depends only on the LanguageModel and EmbeddingModel protocols; AICoScientistMLX and AICoScientistRemote implement those protocols.](docs/assets/architecture.png)
+
+Local models can break JSON, so every agent output is schema-constrained and validated,
+with bounded repair-retry — failures are recorded, never crash the run:
+
+<p align="center">
+  <img src="docs/assets/decode.png" alt="Schema-constrained decode: inject schema into the prompt, generate, extract JSON, validate against the schema; on success decode the value, on failure repair-retry by feeding the error back, and if retries are exhausted record an AgentError in metrics." width="360" />
+</p>
+
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design.
 
 ## Requirements
 

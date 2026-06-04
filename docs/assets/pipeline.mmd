@@ -1,27 +1,34 @@
-flowchart TD
-    goal([Research goal]) --> gen
+%%{init: {'theme':'base','themeVariables':{'background':'#070b14','primaryColor':'#0e1726','primaryTextColor':'#e6edf3','primaryBorderColor':'#22d3ee','lineColor':'#38bdf8','fontFamily':'Inter,Helvetica,sans-serif','fontSize':'15px','clusterBkg':'#0b1220','clusterBorder':'#1e293b','titleColor':'#7dd3fc'}}}%%
+flowchart TB
+    goal(["Research goal"]):::io --> G
 
-    subgraph seed[Initial pass]
+    subgraph SEED["Initial pass"]
         direction TB
-        gen[Generation Agent<br/>propose hypotheses] --> ref1[Reflection Agent<br/>peer review]
-        ref1 --> rank1[Ranking Agent<br/>score and order]
-        rank1 --> tour1[Tournament Agent<br/>Elo self-play]
+        G["1 · Generation"]:::gen --> R["2 · Reflection"]:::rev
+        R --> K["3 · Ranking"]:::rank
+        K --> T["4 · Tournament<br/>Elo k=24"]:::tour
     end
 
-    tour1 --> loop
+    T --> META
 
-    subgraph loop[Refinement loop x N]
+    subgraph LOOP["Refinement loop x N"]
         direction TB
-        meta[Meta-Review Agent<br/>synthesize insights] --> evo[Evolution Agent<br/>refine top-k]
-        evo --> ref2[Reflection Agent<br/>re-review]
-        ref2 --> rank2[Ranking Agent<br/>re-rank]
-        rank2 --> tour2[Tournament Agent<br/>Elo self-play]
-        tour2 --> prox[Proximity<br/>embedding clusters]
+        META["5 · Meta-Review"]:::meta --> E["6 · Evolution<br/>top-k"]:::evo
+        E --> R2["Reflection"]:::rev
+        R2 --> K2["Ranking"]:::rank
+        K2 --> T2["Tournament"]:::tour
+        T2 --> P["7 · Proximity<br/>cosine clusters"]:::prox
     end
 
-    loop --> result([Top-ranked hypotheses<br/>+ meta-review + clusters])
+    P -. repeat .-> META
+    P --> OUT(["Ranked hypotheses + clusters"]):::io
 
-    classDef agent fill:#1f2937,stroke:#60a5fa,stroke-width:1px,color:#e5e7eb;
-    classDef io fill:#0b1220,stroke:#34d399,stroke-width:1px,color:#d1fae5;
-    class gen,ref1,rank1,tour1,meta,evo,ref2,rank2,tour2,prox agent;
-    class goal,result io;
+    classDef io fill:#06281f,stroke:#34d399,color:#d1fae5,stroke-width:2px;
+    classDef gen fill:#0b2a4a,stroke:#38bdf8,color:#e6edf3,stroke-width:1.5px;
+    classDef rev fill:#0e2540,stroke:#22d3ee,color:#e6edf3,stroke-width:1.5px;
+    classDef rank fill:#10233b,stroke:#60a5fa,color:#e6edf3,stroke-width:1.5px;
+    classDef tour fill:#2a1e4a,stroke:#a78bfa,color:#ede9fe,stroke-width:1.5px;
+    classDef meta fill:#3a1f3a,stroke:#f0abfc,color:#fce7f3,stroke-width:1.5px;
+    classDef evo fill:#0e3030,stroke:#2dd4bf,color:#ccfbf1,stroke-width:1.5px;
+    classDef prox fill:#3a2e12,stroke:#fbbf24,color:#fef3c7,stroke-width:1.5px;
+    classDef ghost fill:transparent,stroke:transparent,color:#94a3b8;

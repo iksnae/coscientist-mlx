@@ -11,13 +11,16 @@ the MLX runtime:
 | Target | Role | MLX? |
 |---|---|---|
 | `AICoScientistKit` | Pure domain, agents, engine, protocol boundaries | **No** |
-| `AICoScientistMLX` | The MLX adapter — the only place `import MLX*` appears | Yes |
-| `AICoScientistCLI` | The `aicoscientist` command-line driver | via MLX |
+| `AICoScientistMLX` | On-device adapter — the only place `import MLX*` appears | Yes |
+| `AICoScientistRemote` | Hosted OpenAI-compatible adapter | No |
+| `AICoScientistCLI` | The `aicoscientist` driver; routes per stage | via MLX |
 
 This is the Dependency Inversion Principle in practice: the engine and the seven agents
 are written against ``LanguageModel``, ``EmbeddingModel``, and ``SchemaConstrainedDecoding``,
 so unit tests run on a deterministic ``MockLanguageModel`` with no GPU and no downloads,
-while production wires in the MLX-backed implementations.
+while production wires in the MLX-backed (or remote) implementations.
+
+![Layering: the aicoscientist CLI drives the CoScientist Engine and seven agents inside AICoScientistKit, which depends only on the LanguageModel and EmbeddingModel protocols; AICoScientistMLX and AICoScientistRemote implement those protocols.](architecture)
 
 ## The decoding pipeline
 
@@ -33,6 +36,8 @@ post-generation validation.
    **repair-retry**.
 3. Hard failure surfaces as a typed ``AgentError``, recorded in ``ExecutionMetrics`` —
    the engine continues.
+
+![Schema-constrained decode: inject the schema into the prompt, generate, extract JSON and strip reasoning, then validate against the schema; on success decode the value, on failure repair-retry by feeding the error back, and when retries are exhausted record an AgentError in metrics.](decode)
 
 A heavier GPU logit-masking form (making invalid tokens impossible) sits behind the same
 ``SchemaConstrainedDecoding`` protocol and is gated to the integration target, since it
