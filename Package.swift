@@ -2,9 +2,10 @@
 import PackageDescription
 
 // Architecture (see docs/ARCHITECTURE.md):
-//   AICoScientistKit  — pure domain + protocol boundaries. NO MLX import. Fast unit tests.
-//   AICoScientistMLX  — the MLX adapter (M1+). All `import MLX*` is quarantined here.
-//   AICoScientistCLI  — driver, depends on both.
+//   AICoScientistKit    — pure domain + protocol boundaries. NO MLX import. Fast unit tests.
+//   AICoScientistMLX    — the on-device MLX adapter. All `import MLX*` is quarantined here.
+//   AICoScientistRemote — a hosted (OpenAI-compatible) LanguageModel adapter. Foundation only.
+//   AICoScientistCLI    — driver; routes per stage across local + remote.
 // This keeps the core testable and swappable (DIP) and isolates MLX's churn/build cost.
 let package = Package(
     name: "coscientist-mlx",
@@ -12,6 +13,7 @@ let package = Package(
     products: [
         .library(name: "AICoScientistKit", targets: ["AICoScientistKit"]),
         .library(name: "AICoScientistMLX", targets: ["AICoScientistMLX"]),
+        .library(name: "AICoScientistRemote", targets: ["AICoScientistRemote"]),
         .executable(name: "aicoscientist", targets: ["AICoScientistCLI"]),
     ],
     dependencies: [
@@ -23,6 +25,10 @@ let package = Package(
         // `HuggingFace` and `Tokenizers` modules, which the consumer must supply.
         .package(url: "https://github.com/huggingface/swift-huggingface", .upToNextMajor(from: "0.9.0")),
         .package(url: "https://github.com/huggingface/swift-transformers", .upToNextMajor(from: "1.3.0")),
+        // Documentation generation (DocC). Build-tool plugin only — does not affect the
+        // library/executable build graph or `swift build`/`swift test`. Drives the GitHub
+        // Pages site (see .github/workflows/docs.yml).
+        .package(url: "https://github.com/apple/swift-docc-plugin", from: "1.4.0"),
     ],
     targets: [
         .target(
@@ -44,11 +50,16 @@ let package = Package(
                 .product(name: "Tokenizers", package: "swift-transformers"),
             ]
         ),
+        .target(
+            name: "AICoScientistRemote",
+            dependencies: ["AICoScientistKit"]
+        ),
         .executableTarget(
             name: "AICoScientistCLI",
             dependencies: [
                 "AICoScientistKit",
                 "AICoScientistMLX",
+                "AICoScientistRemote",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
@@ -59,6 +70,10 @@ let package = Package(
         .testTarget(
             name: "AICoScientistMLXTests",
             dependencies: ["AICoScientistMLX"]
+        ),
+        .testTarget(
+            name: "AICoScientistRemoteTests",
+            dependencies: ["AICoScientistRemote"]
         ),
     ],
     swiftLanguageModes: [.v6]

@@ -1,5 +1,6 @@
 import AICoScientistKit
 import AICoScientistMLX
+import AICoScientistRemote
 import ArgumentParser
 import Foundation
 
@@ -27,6 +28,9 @@ struct AICoScientistCommand: AsyncParsableCommand {
 
     @Option(help: "Path to save the run result as JSON.")
     var save: String?
+
+    @Option(help: "Hybrid: route reflection + tournament to a remote OpenAI-compatible model (uses OPENAI_API_KEY), keeping generation/evolution on-device.")
+    var remoteJudge: String?
 
     mutating func run() async throws {
         print("coscientist-mlx \(BuildInfo.version)")
@@ -57,8 +61,22 @@ struct AICoScientistCommand: AsyncParsableCommand {
         let model = try await MLXLanguageModel.load()
         let embedder = try await MLXEmbeddingModel.load()
         let decodeMetrics = DecodeMetrics()
+        let localDecoder = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
+
+        let router: any DecoderRouting
+        if let remoteJudge {
+            let remoteDecoder = SchemaConstrainedDecoder(
+                model: RemoteLanguageModel(model: remoteJudge), metrics: decodeMetrics)
+            router = RoleDecoderRouter(
+                default: localDecoder,
+                overrides: [.reflection: remoteDecoder, .tournament: remoteDecoder])
+            print("Hybrid: reflection + tournament → remote \(remoteJudge); rest on-device.\n")
+        } else {
+            router = StaticDecoderRouter(localDecoder)
+        }
+
         let engine = CoScientistEngine(
-            decoder: SchemaConstrainedDecoder(model: model, metrics: decodeMetrics),
+            router: router,
             config: .init(maxIterations: iterations, hypothesesPerGeneration: count),
             proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder),
             decodeMetrics: decodeMetrics

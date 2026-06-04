@@ -4,6 +4,16 @@ A native Swift port of AI-CoScientist targeting Apple Silicon, running local ope
 models via **MLX-Swift** (Metal-backed). Goal: feature-equivalent to the Python
 reference, then superior where the local + native stack allows.
 
+> **Origin & citation.** The methodology — a multi-agent "generate, debate, evolve"
+> loop with Elo-tournament self-play over research hypotheses — is from Google's
+> *Towards an AI co-scientist* (Gottweis et al., 2025, [arXiv:2502.18864](https://arxiv.org/abs/2502.18864)).
+> The Python reference this port follows is
+> [The-Swarm-Corporation/AI-CoScientist](https://github.com/The-Swarm-Corporation/AI-CoScientist)
+> (MIT), built on the [Swarms](https://github.com/kyegomez/swarms) framework
+> (Apache-2.0). Not to be confused with Sakana AI's *The AI Scientist*
+> ([arXiv:2408.06292](https://arxiv.org/abs/2408.06292)), a separate system. Full
+> references and citation live in the [README](../README.md#references).
+
 Decisions locked in:
 - **Form factor:** SPM library (`AICoScientistKit`) + CLI (`aicoscientist`). App can sit on top later.
 - **Inference:** MLX-Swift + **schema-constrained decoding**, Codable-first (see §3).
