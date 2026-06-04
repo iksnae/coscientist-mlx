@@ -26,9 +26,11 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-- **M8 — Foundation Models backend** — `docs/MILESTONE-8-PLAN.md`
-  (Ready). Apple's native tool calling as an optional, availability-gated
-  backend. Drafts queued: M9 (graph inspector), M10 (optimization).
+- **M8 — Hypothesis selection + inspector** — `docs/MILESTONE-8-PLANNING-DRAFT.md`.
+  Results-presentation UX (select a hypothesis in the list/graph, inspect
+  its full detail) pulled ahead on operator signal. Next to grind.
+- Drafts queued: **M9** transparent activity feed, **M10** Foundation
+  Models backend (deferred from M8), **M11** inference optimization.
 
 ## Pointers
 
