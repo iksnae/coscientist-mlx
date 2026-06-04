@@ -13,7 +13,7 @@ struct PlaygroundView: View {
 
     var body: some View {
         HSplitView {
-            controls.frame(minWidth: 320, maxWidth: 400)
+            controls.frame(minWidth: 320, maxWidth: 400, maxHeight: .infinity, alignment: .top)
             VStack(spacing: 0) {
                 Picker("View", selection: $rightPane) {
                     ForEach(RightPane.allCases, id: \.self) { Text($0.rawValue).tag($0) }
@@ -25,7 +25,7 @@ struct PlaygroundView: View {
                 case .charts: ChartsView(timeline: runner.timeline, hypotheses: runner.hypotheses)
                 }
             }
-            .frame(minWidth: 520)
+            .frame(minWidth: 520, maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 920, minHeight: 600)
     }
@@ -134,12 +134,13 @@ struct PlaygroundView: View {
                         }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxHeight: 160)
+                .frame(maxHeight: .infinity)
                 .onChange(of: runner.activity.count) { _, count in
                     if count > 0 { proxy.scrollTo(count - 1, anchor: .bottom) }
                 }
             }
         }
+        .frame(maxHeight: .infinity, alignment: .top)
     }
 
     private var hypothesesList: some View {
