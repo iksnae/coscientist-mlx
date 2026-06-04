@@ -1,0 +1,27 @@
+flowchart TD
+    goal([Research goal]) --> gen
+
+    subgraph seed[Initial pass]
+        direction TB
+        gen[Generation Agent<br/>propose hypotheses] --> ref1[Reflection Agent<br/>peer review]
+        ref1 --> rank1[Ranking Agent<br/>score and order]
+        rank1 --> tour1[Tournament Agent<br/>Elo self-play]
+    end
+
+    tour1 --> loop
+
+    subgraph loop[Refinement loop x N]
+        direction TB
+        meta[Meta-Review Agent<br/>synthesize insights] --> evo[Evolution Agent<br/>refine top-k]
+        evo --> ref2[Reflection Agent<br/>re-review]
+        ref2 --> rank2[Ranking Agent<br/>re-rank]
+        rank2 --> tour2[Tournament Agent<br/>Elo self-play]
+        tour2 --> prox[Proximity<br/>embedding clusters]
+    end
+
+    loop --> result([Top-ranked hypotheses<br/>+ meta-review + clusters])
+
+    classDef agent fill:#1f2937,stroke:#60a5fa,stroke-width:1px,color:#e5e7eb;
+    classDef io fill:#0b1220,stroke:#34d399,stroke-width:1px,color:#d1fae5;
+    class gen,ref1,rank1,tour1,meta,evo,ref2,rank2,tour2,prox agent;
+    class goal,result io;

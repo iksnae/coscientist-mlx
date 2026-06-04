@@ -5,13 +5,12 @@ a multi-agent pipeline that generates, peer-reviews, ranks (via Elo tournaments)
 iteratively evolves scientific research hypotheses — running **local open models on Apple
 Silicon**, fully offline.
 
-> Status: **M5 — embedding proximity.** M0 foundation + M1 MLX inference + M2 schema-driven
-> decoding + M3 the seven agents + M4 the `CoScientistEngine` orchestrating the full workflow
-> + M5 embedding-based proximity (`MLXEmbedders` → cosine → union-find clustering) replacing
-> the reference's LLM-judged, string-matched clustering. Runnable end-to-end via
-> `aicoscientist "<goal>" --run` (`--save <path>` to persist results). Verified on a real
-> local run (Qwen3-4B + Qwen3-Embedding-0.6B). Next: per-stage routing + remote adapter,
-> then iOS. See
+> Status: **hybrid routing.** M0–M5 (foundation → MLX inference → schema decoding → seven
+> agents → engine → embedding proximity), feature-parity outputs, and **per-stage routing**:
+> a `DecoderRouting` layer lets each agent use a different backend — on-device `MLX` and/or a
+> hosted `RemoteLanguageModel` (OpenAI-compatible). Run on-device with `aicoscientist
+> "<goal>" --run`, or hybrid (local generation + a strong remote judge) with
+> `--remote-judge <model>` (uses `OPENAI_API_KEY`). Verified on macOS and on iPhone. See
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and milestones,
 > [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey and tiered recommendations,
 > and [`docs/IOS.md`](docs/IOS.md) for on-device iPhone/iPad enablement.

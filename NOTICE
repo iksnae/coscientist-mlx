@@ -1,0 +1,35 @@
+coscientist-mlx
+Copyright (c) 2026 K Mills
+
+This project is a native Swift + MLX port of the "AI co-scientist" methodology.
+It is released under the MIT License (see LICENSE).
+
+------------------------------------------------------------------------------
+Attribution and prior work
+------------------------------------------------------------------------------
+
+This software re-implements, on Apple Silicon with local open models, the
+methodology described in:
+
+  Juraj Gottweis, Wei-Hung Weng, Alexander Daryin, et al. "Towards an AI
+  co-scientist." arXiv:2502.18864 (2025).
+  https://arxiv.org/abs/2502.18864
+  Official PDF: https://storage.googleapis.com/coscientist_paper/ai_coscientist.pdf
+
+The pipeline structure (generation, reflection, ranking, Elo tournament,
+evolution, meta-review, proximity) follows the Python reference implementation:
+
+  The Swarm Corporation. "AI-CoScientist." MIT License.
+  https://github.com/The-Swarm-Corporation/AI-CoScientist
+
+The Python reference is built on the Swarms multi-agent framework:
+
+  kyegomez. "Swarms." Apache License 2.0.
+  https://github.com/kyegomez/swarms
+
+This project does not include source code from those projects; it is an
+independent Swift implementation of the same methodology. The credits above are
+provided for academic attribution and acknowledgement.
+
+Note: Google's "AI co-scientist" (cited above) is distinct from Sakana AI's
+"The AI Scientist" (arXiv:2408.06292), which is a separate, unrelated system.
