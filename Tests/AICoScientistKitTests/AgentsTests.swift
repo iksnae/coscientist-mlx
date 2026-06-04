@@ -27,12 +27,16 @@ struct AgentsTests {
         let agent = ReflectionAgent()
         #expect(agent.userPrompt(for: .init(researchGoal: "g", hypothesisText: "H")).contains("H"))
         let json = #"""
-        {"scores":{"scientificSoundness":0.8,"novelty":0.7,"testability":0.9,"impact":0.6},
-         "reviewSummary":"good","strengths":["a"],"weaknesses":[],"suggestions":["b"]}
+        {"scores":{"scientificSoundness":0.8,"novelty":0.7,"relevance":0.75,"testability":0.9,"clarity":0.8,"impact":0.6},
+         "reviewSummary":"good","safetyEthicalConcerns":"None identified",
+         "strengths":["a"],"weaknesses":[],"suggestions":["b"]}
         """#
         let out = try await agent.run(.init(researchGoal: "g", hypothesisText: "H"), using: decoder(json))
         #expect(out.scores.novelty == 0.7)
+        #expect(out.scores.relevance == 0.75)
+        #expect(out.scores.clarity == 0.8)
         #expect(out.reviewSummary == "good")
+        #expect(out.safetyEthicalConcerns == "None identified")
     }
 
     @Test("Ranking: decodes ordered hypotheses; prompt numbers them")
@@ -45,23 +49,42 @@ struct AgentsTests {
         #expect(out.ranked.first?.overallScore == 0.9)
     }
 
-    @Test("Evolution: decodes refined hypothesis")
+    @Test("Evolution: decodes refined hypothesis with specific refinements")
     func evolution() async throws {
         let agent = EvolutionAgent()
+        let json = #"""
+        {"originalText":"o","refinedText":"r","refinementSummary":"s",
+         "specificRefinements":[{"aspect":"clarity","change":"tightened","justification":"was vague"}]}
+        """#
         let out = try await agent.run(
-            .init(originalText: "o", reviewFeedback: "f", metaReviewInsights: "m"),
-            using: decoder(#"{"originalText":"o","refinedText":"r","refinementSummary":"s"}"#))
+            .init(originalText: "o", reviewFeedback: "f", metaReviewInsights: "m"), using: decoder(json))
         #expect(out.refinedText == "r")
+        #expect(out.specificRefinements.first?.aspect == "clarity")
     }
 
-    @Test("Meta-review: decodes synthesis with recommendations")
+    @Test("Meta-review: decodes the enriched synthesis (themes, process, connections)")
     func metaReview() async throws {
         let agent = MetaReviewAgent()
-        let out = try await agent.run(
-            .init(reviewsDigest: "digest"),
-            using: decoder(#"{"metaReviewSummary":"sum","strengths":["x"],"weaknesses":["y"],"strategicRecommendations":["z"]}"#))
+        let json = #"""
+        {"metaReviewSummary":"sum","recurringThemes":["t1"],"strengths":["x"],"weaknesses":["y"],
+         "processAssessment":{"generation":"g","review":"r","evolution":"e"},
+         "strategicRecommendations":["z"],"potentialConnections":["c1"]}
+        """#
+        let out = try await agent.run(.init(reviewsDigest: "digest"), using: decoder(json))
         #expect(out.metaReviewSummary == "sum")
+        #expect(out.recurringThemes == ["t1"])
+        #expect(out.processAssessment.evolution == "e")
+        #expect(out.potentialConnections == ["c1"])
         #expect(out.strategicRecommendations == ["z"])
+    }
+
+    @Test("Meta-review: terse reply (only summary) still decodes with defaults")
+    func metaReviewLenient() async throws {
+        let out = try await MetaReviewAgent().run(
+            .init(reviewsDigest: "d"), using: decoder(#"{"metaReviewSummary":"only"}"#))
+        #expect(out.metaReviewSummary == "only")
+        #expect(out.recurringThemes.isEmpty)
+        #expect(out.processAssessment == .init())
     }
 
     @Test("Tournament: decodes a verdict; prompt carries both hypotheses")

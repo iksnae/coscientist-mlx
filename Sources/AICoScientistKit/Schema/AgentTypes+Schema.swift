@@ -8,10 +8,15 @@ extension ReviewScores: Schematized {
             properties: [
                 "scientificSoundness": .number,
                 "novelty": .number,
+                "relevance": .number,
                 "testability": .number,
+                "clarity": .number,
                 "impact": .number,
             ],
-            required: ["scientificSoundness", "novelty", "testability", "impact"]
+            required: [
+                "scientificSoundness", "novelty", "relevance",
+                "testability", "clarity", "impact",
+            ]
         )
     }
 }
@@ -34,11 +39,12 @@ extension HypothesisReview: Schematized {
             properties: [
                 "scores": ReviewScores.jsonSchema,
                 "reviewSummary": .string(),
+                "safetyEthicalConcerns": .string(),
                 "strengths": .array(items: .string()),
                 "weaknesses": .array(items: .string()),
                 "suggestions": .array(items: .string()),
             ],
-            required: ["scores", "reviewSummary"]
+            required: ["scores", "reviewSummary", "safetyEthicalConcerns"]
         )
     }
 }
