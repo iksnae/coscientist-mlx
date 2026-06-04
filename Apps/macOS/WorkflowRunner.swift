@@ -1,5 +1,6 @@
 import AICoScientistKit
 import AICoScientistMLX
+import AICoScientistRemote
 import Foundation
 import Observation
 
@@ -10,7 +11,6 @@ import Observation
 @Observable
 final class WorkflowRunner {
     var goal = "Improve lithium-ion battery energy density"
-    var generatorKey = ModelCatalog.defaultGeneratorKey
     var hypothesesPerGeneration = 4
     var iterations = 1
 
@@ -65,17 +65,32 @@ final class WorkflowRunner {
         hypotheses = []; errors = []; activity = []; metrics = ExecutionMetrics()
         timeline = []; lastResult = nil; downloadProgress = nil
 
+        let store = SettingsStore.shared
         do {
-            let model = try await MLXLanguageModel.load(generatorKey) { [weak self] fraction in
+            let model = try await MLXLanguageModel.load(store.generatorKey) { [weak self] fraction in
                 Task { @MainActor in self?.downloadProgress = fraction }
             }
-            let embedder = try await MLXEmbeddingModel.load { [weak self] fraction in
+            let embedder = try await MLXEmbeddingModel.load(store.embedderKey) { [weak self] fraction in
                 Task { @MainActor in self?.downloadProgress = fraction }
             }
             downloadProgress = nil
             let decodeMetrics = DecodeMetrics()
+            let localDecoder = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
+
+            let router: any DecoderRouting
+            if store.remoteReady, let baseURL = URL(string: store.remoteBaseURL) {
+                let remote = RemoteLanguageModel(
+                    model: store.remoteModel, apiKey: store.openAIKey, baseURL: baseURL)
+                let remoteDecoder = SchemaConstrainedDecoder(model: remote, metrics: decodeMetrics)
+                router = RoleDecoderRouter(
+                    default: localDecoder,
+                    overrides: [.reflection: remoteDecoder, .tournament: remoteDecoder])
+            } else {
+                router = StaticDecoderRouter(localDecoder)
+            }
+
             let engine = CoScientistEngine(
-                decoder: SchemaConstrainedDecoder(model: model, metrics: decodeMetrics),
+                router: router,
                 config: .init(
                     maxIterations: iterations, hypothesesPerGeneration: hypothesesPerGeneration),
                 proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder),
