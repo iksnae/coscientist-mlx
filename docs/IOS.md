@@ -20,6 +20,27 @@
   boundary with no MLX import; an iOS app target links `AICoScientistMLX` (on-device adapter)
   and/or a remote adapter behind the same `LanguageModel` protocol, routed per stage.
 
+## 0. Measured on device ✅ (iPhone 15 Pro, A17 Pro, 8 GB, iOS 26.5)
+
+Verified June 2026 with the `CoScientistApp` spike (`ios/App`, generated via `project.yml`):
+the full MLX stack builds for iOS arm64, installs, and runs — AI-CoScientist generates a
+hypothesis **fully on-device**. Single-generation probe, `Memory.cacheLimit = 20 MB`, **no**
+increased-memory entitlement:
+
+| Metric | Measured | Implication |
+|---|---|---|
+| Model | `Qwen3-1.7B-4bit` | runs comfortably |
+| Latency / speed | 1.4 s · **~22 tok/s** | A17 Pro is *below* the ~40–60 tok/s A18/A19 estimate — a 3·N tournament on-device would be slow → **offload heavy stages** |
+| App memory budget | **~3.3 GB** available (no entitlement) | the default jetsam budget on this 8 GB phone |
+| Memory after 1.7B load+gen | 3357 → **2274 MB** free (~1.1 GB consumed) | **Qwen3-4B (~2.3 GB) + KV + embedder will NOT fit safely without the increased-memory entitlement** — 1.7B is the safe default; 4B needs the entitlement |
+| Thermal | nominal → **fair after a single generation** | confirms sustained loops throttle; don't run the full pipeline on-device |
+| Output quirk | Qwen3-1.7B emitted an empty `<think></think>` before the answer | thinking model — set `enable_thinking:false` / use instruct models for schema-critical roles (the tolerant JSON extractor handled it) |
+
+Bottom line: **on-device generation is real and viable at ≤2B**; the hybrid split (local
+generation + embeddings, offload tournament/ranking/evolution) is the right architecture,
+now empirically grounded. Build/install: see `.claude/skills/mlx-swift` (xcodebuild +
+`-skipMacroValidation` + `-allowProvisioningUpdates`; Metal toolchain + iOS platform required).
+
 ## 1. Does MLX-Swift run on iOS? Yes — iOS 17+
 
 - `mlx-swift` `Package.swift` declares `.iOS(.v17)` (also tvOS/visionOS 17, macOS 14).
