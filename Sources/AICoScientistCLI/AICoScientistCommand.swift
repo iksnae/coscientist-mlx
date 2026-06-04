@@ -12,7 +12,7 @@ struct AICoScientistCommand: AsyncParsableCommand {
     )
 
     @Argument(help: "The research goal to explore.")
-    var goal: String
+    var goal: String = ""
 
     @Flag(help: "Run the full multi-agent workflow (downloads ~4.5 GB on first run).")
     var run = false
@@ -32,7 +32,22 @@ struct AICoScientistCommand: AsyncParsableCommand {
     @Option(help: "Hybrid: route reflection + tournament to a remote OpenAI-compatible model (uses OPENAI_API_KEY), keeping generation/evolution on-device.")
     var remoteJudge: String?
 
+    @Option(name: .customLong("model"),
+        help: "Local generator: a catalog key (e.g. qwen3-4b) or HF repo id. See --list-models.")
+    var modelKey: String?
+
+    @Flag(help: "List the curated model catalog and exit.")
+    var listModels = false
+
     mutating func run() async throws {
+        if listModels {
+            Self.printCatalog()
+            return
+        }
+        guard !goal.isEmpty else {
+            print("Provide a research goal (or --list-models). See --help.")
+            return
+        }
         print("coscientist-mlx \(BuildInfo.version)")
         print("Research goal: \(goal)\n")
 
@@ -45,10 +60,22 @@ struct AICoScientistCommand: AsyncParsableCommand {
         }
     }
 
+    private static func printCatalog() {
+        func line(_ m: CatalogModel) {
+            print("  \(m.key.padding(toLength: 18, withPad: " ", startingAt: 0)) "
+                + "~\(String(format: "%.1f", m.approxSizeGB)) GB  \(m.repoID)")
+        }
+        print("Curated models (pinned to a commit). Use the key with --model.\n")
+        print("Generators:"); ModelCatalog.generators.forEach(line)
+        print("Embedders:"); ModelCatalog.embedders.forEach(line)
+        print("\nTrusted orgs (load at 'main' with a warning): "
+            + ModelCatalog.trustedOrgs.sorted().joined(separator: ", "))
+    }
+
     private func runProbe() async throws {
         print("Loading local model (first run downloads from Hugging Face)…")
-        let model = try await MLXLanguageModel.load()
-        let reply = try await model.generateText(
+        let llm = try await MLXLanguageModel.load(modelKey ?? ModelCatalog.defaultGeneratorKey)
+        let reply = try await llm.generateText(
             system: "You are a terse scientific assistant. Propose one concise, testable hypothesis.",
             user: goal,
             config: .deterministic
@@ -58,10 +85,10 @@ struct AICoScientistCommand: AsyncParsableCommand {
 
     private func runWorkflow() async throws {
         print("Loading local models (first run downloads from Hugging Face)…")
-        let model = try await MLXLanguageModel.load()
+        let llm = try await MLXLanguageModel.load(modelKey ?? ModelCatalog.defaultGeneratorKey)
         let embedder = try await MLXEmbeddingModel.load()
         let decodeMetrics = DecodeMetrics()
-        let localDecoder = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
+        let localDecoder = SchemaConstrainedDecoder(model: llm, metrics: decodeMetrics)
 
         let router: any DecoderRouting
         if let remoteJudge {

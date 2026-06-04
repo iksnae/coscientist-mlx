@@ -27,6 +27,13 @@ struct PlaygroundView: View {
                 TextField("goal", text: $runner.goal, axis: .vertical)
                     .textFieldStyle(.roundedBorder).lineLimit(2...5).disabled(runner.running)
             }
+            Picker("Model", selection: $runner.generatorKey) {
+                ForEach(ModelCatalog.generators) { m in
+                    Text("\(m.displayName) · ~\(String(format: "%.1f", m.approxSizeGB)) GB").tag(m.key)
+                }
+            }
+            .disabled(runner.running)
+
             Stepper("Hypotheses: \(runner.hypothesesPerGeneration)",
                 value: $runner.hypothesesPerGeneration, in: 2...12).disabled(runner.running)
             Stepper("Iterations: \(runner.iterations)",
