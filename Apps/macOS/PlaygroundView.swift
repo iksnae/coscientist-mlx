@@ -40,21 +40,29 @@ struct PlaygroundView: View {
                 value: $runner.iterations, in: 1...4).disabled(runner.running)
 
             HStack {
-                Button {
-                    Task { await runner.run() }
-                } label: {
-                    HStack {
-                        if runner.running { ProgressView().controlSize(.small) }
-                        Text(runner.running ? "Running…" : "Run workflow")
+                if runner.running {
+                    Button(role: .destructive) { runner.cancel() } label: {
+                        HStack { ProgressView().controlSize(.small); Text("Stop") }
                     }
+                    .buttonStyle(.borderedProminent).tint(.red)
+                } else {
+                    Button { runner.start() } label: { Text("Run workflow") }
+                        .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent).disabled(runner.running)
 
                 Menu("Export") {
                     Button("JSON…") { exportJSON() }
                     Button("Markdown…") { exportMarkdown() }
                 }
                 .disabled(!runner.canExport).fixedSize()
+            }
+
+            if let download = runner.downloadProgress {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Downloading model… \(Int(download * 100))%")
+                        .font(.caption).foregroundStyle(.secondary)
+                    ProgressView(value: download)
+                }
             }
 
             progress

@@ -24,20 +24,26 @@ public actor MLXLanguageModel: AICoScientistKit.LanguageModel {
     /// Load a generator by catalog key (e.g. "qwen3-4b") or raw HF repo id. Catalog entries
     /// load at a **pinned commit**; a trusted-org or unverified id loads at `main` with a
     /// logged warning (see `ModelCatalog`). Defaults to the curated default generator.
+    /// - Parameter onProgress: download progress (0…1) during the first fetch.
     public static func load(
-        _ keyOrID: String = ModelCatalog.defaultGeneratorKey
+        _ keyOrID: String = ModelCatalog.defaultGeneratorKey,
+        onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> MLXLanguageModel {
         let resolved = ModelCatalog.resolve(keyOrID)
         if let warning = resolved.warning { Log.logger.warning("\(warning)") }
         let configuration = ModelConfiguration(
             id: resolved.repoID, revision: resolved.revision ?? "main")
-        let container = try await #huggingFaceLoadModelContainer(configuration: configuration)
+        let container = try await #huggingFaceLoadModelContainer(configuration: configuration) {
+            progress in onProgress?(progress.fractionCompleted)
+        }
         return MLXLanguageModel(container: container)
     }
 
     /// Alias for callers that prefer the explicit label.
-    public static func load(modelId: String) async throws -> MLXLanguageModel {
-        try await load(modelId)
+    public static func load(
+        modelId: String, onProgress: (@Sendable (Double) -> Void)? = nil
+    ) async throws -> MLXLanguageModel {
+        try await load(modelId, onProgress: onProgress)
     }
 
     public func generateText(

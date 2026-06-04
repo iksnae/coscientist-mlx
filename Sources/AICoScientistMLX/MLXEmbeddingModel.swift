@@ -20,8 +20,10 @@ public actor MLXEmbeddingModel: AICoScientistKit.EmbeddingModel {
     /// Load an embedder by catalog key (e.g. "qwen3-embed-0.6b") or raw HF repo id. Catalog
     /// entries load at a pinned commit; others load at `main` with a logged warning. Defaults
     /// to the curated default embedder.
+    /// - Parameter onProgress: download progress (0…1) during the first fetch.
     public static func load(
-        _ keyOrID: String = ModelCatalog.defaultEmbedderKey
+        _ keyOrID: String = ModelCatalog.defaultEmbedderKey,
+        onProgress: (@Sendable (Double) -> Void)? = nil
     ) async throws -> MLXEmbeddingModel {
         let resolved = ModelCatalog.resolve(keyOrID)
         if let warning = resolved.warning { Log.logger.warning("\(warning)") }
@@ -31,7 +33,7 @@ public actor MLXEmbeddingModel: AICoScientistKit.EmbeddingModel {
             from: #hubDownloader(),
             using: #huggingFaceTokenizerLoader(),
             configuration: configuration,
-            progressHandler: { _ in }
+            progressHandler: { progress in onProgress?(progress.fractionCompleted) }
         )
         return MLXEmbeddingModel(container: container)
     }

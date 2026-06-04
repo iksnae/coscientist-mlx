@@ -178,6 +178,15 @@ struct EngineTests {
         #expect(matches.contains { $0.detail.contains("wins") })
     }
 
+    @Test("Cancellation stops the run and is recorded; result is still returned")
+    func cancellation() async {
+        let engine = smallEngine(model: ScriptedModel())
+        let task = Task { await engine.run(researchGoal: "g") }
+        task.cancel()
+        let result = await task.value
+        #expect(result.errors.contains { $0.localizedCaseInsensitiveContains("cancel") })
+    }
+
     @Test("Records per-phase timing for every phase")
     func perPhaseTiming() async {
         let result = await smallEngine(model: ScriptedModel()).run(researchGoal: "g")
