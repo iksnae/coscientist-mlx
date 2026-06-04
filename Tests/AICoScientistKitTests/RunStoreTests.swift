@@ -47,6 +47,17 @@ struct RunStoreTests {
         #expect(snapshot.clusters.first?.clusterID == "c1")
     }
 
+    @Test("Markdown export includes goal, hypotheses, and metrics")
+    func markdownExport() {
+        let md = sampleSnapshot().markdown()
+        #expect(md.contains("# AI Co-Scientist — test goal"))
+        #expect(md.contains("## Top hypotheses"))
+        #expect(md.contains("persisted hypothesis"))
+        #expect(md.contains("Elo 1275"))
+        #expect(md.contains("## Metrics"))
+        #expect(md.contains("reviews: 2"))
+    }
+
     @Test("Load throws on a missing file")
     func missingFile() {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("does-not-exist-\(UUID()).json")

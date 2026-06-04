@@ -156,17 +156,26 @@ struct EngineTests {
         #expect(await defaultCounter.count == 7)
     }
 
-    @Test("Emits live progress after each phase")
+    @Test("Emits granular progress: phases, per-review, and per-tournament-match")
     func progressEvents() async {
         let collector = ProgressCollector()
         _ = await smallEngine(model: ScriptedModel()).run(researchGoal: "g") { collector.add($0) }
+        let events = collector.events
 
-        let phases = collector.events.map(\.phase)
-        #expect(phases.first == "generation")
-        #expect(phases.contains("tournament"))
-        #expect(phases.contains("proximity"))
-        #expect(collector.events.first { $0.phase == "generation" }?.hypotheses.count == 2)
-        #expect(collector.events.contains { $0.iteration == 1 })   // refinement round reported
+        #expect(events.first?.phase == "generation")
+        #expect(events.contains { $0.phase == "proximity" })
+        #expect(events.contains { $0.iteration == 1 })   // refinement round reported
+
+        // Per-review sub-steps with detail + countable totals.
+        let reviews = events.filter { $0.phase == "reflection" && $0.detail.hasPrefix("review") }
+        #expect(reviews.contains { $0.detail.contains("review 1/2") })
+        #expect(reviews.contains { $0.fractionCompleted == 0.5 })
+
+        // Per-match sub-steps: 2 hypotheses × 3 rounds = 6, each with a winner in the detail.
+        let matches = events.filter { $0.phase == "tournament" && $0.detail.hasPrefix("match") }
+        #expect(matches.count == 6)
+        #expect(matches.contains { $0.total == 6 })
+        #expect(matches.contains { $0.detail.contains("wins") })
     }
 
     @Test("Records per-phase timing for every phase")
