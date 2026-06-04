@@ -14,6 +14,8 @@ let package = Package(
         .library(name: "AICoScientistKit", targets: ["AICoScientistKit"]),
         .library(name: "AICoScientistMLX", targets: ["AICoScientistMLX"]),
         .library(name: "AICoScientistRemote", targets: ["AICoScientistRemote"]),
+        .library(
+            name: "AICoScientistFoundationModels", targets: ["AICoScientistFoundationModels"]),
         .executable(name: "aicoscientist", targets: ["AICoScientistCLI"]),
     ],
     dependencies: [
@@ -54,12 +56,20 @@ let package = Package(
             name: "AICoScientistRemote",
             dependencies: ["AICoScientistKit"]
         ),
+        // Apple Foundation Models adapter. `import FoundationModels` is quarantined here,
+        // behind `canImport` + `@available`, so the package still builds on toolchains
+        // without the framework.
+        .target(
+            name: "AICoScientistFoundationModels",
+            dependencies: ["AICoScientistKit"]
+        ),
         .executableTarget(
             name: "AICoScientistCLI",
             dependencies: [
                 "AICoScientistKit",
                 "AICoScientistMLX",
                 "AICoScientistRemote",
+                "AICoScientistFoundationModels",
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
@@ -74,6 +84,10 @@ let package = Package(
         .testTarget(
             name: "AICoScientistRemoteTests",
             dependencies: ["AICoScientistRemote"]
+        ),
+        .testTarget(
+            name: "AICoScientistFoundationModelsTests",
+            dependencies: ["AICoScientistFoundationModels"]
         ),
     ],
     swiftLanguageModes: [.v6]
