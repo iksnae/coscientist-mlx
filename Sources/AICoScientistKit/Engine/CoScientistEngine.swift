@@ -131,6 +131,7 @@ public actor CoScientistEngine {
 
     private func reflectionPhase(goal: String) async {
         let agent = ReflectionAgent()
+        let n = hypotheses.count
         for i in hypotheses.indices {
             do {
                 let review = try await agent.run(
@@ -142,6 +143,7 @@ public actor CoScientistEngine {
             } catch {
                 errors.append("reflection[\(i)]: \(error)")
             }
+            report("reflection", "review \(i + 1)/\(n)", completed: i + 1, total: n)
         }
     }
 
@@ -156,8 +158,9 @@ public actor CoScientistEngine {
         guard hypotheses.count >= 2 else { return }
         let agent = TournamentAgent()
         let rounds = hypotheses.count * 3
-        for _ in 0..<rounds {
+        for round in 0..<rounds {
             let (i, j) = pickTwoDistinct(in: hypotheses.count)
+            var detail = "match \(round + 1)/\(rounds)"
             do {
                 let verdict = try await agent.run(
                     .init(researchGoal: goal,
@@ -170,11 +173,14 @@ public actor CoScientistEngine {
                 hypotheses[i].updateElo(opponentElo: oldJ, didWin: aWon, kFactor: 24)
                 hypotheses[j].updateElo(opponentElo: oldI, didWin: !aWon, kFactor: 24)
                 metrics.tournamentsCount += 1
+                detail += aWon ? ": A wins" : ": B wins"
             } catch {
                 errors.append("tournament: \(error)")
             }
+            report("tournament", detail, completed: round + 1, total: rounds)
         }
         hypotheses.sort { $0.eloRating > $1.eloRating }
+        report("tournament", "ranked", completed: rounds, total: rounds)
     }
 
     private func metaReviewPhase() async -> MetaReview? {
@@ -195,7 +201,7 @@ public actor CoScientistEngine {
         guard !topK.isEmpty else { return }
         let agent = EvolutionAgent()
         var evolved: [Hypothesis] = []
-        for h in topK {
+        for (idx, h) in topK.enumerated() {
             let feedback = h.reviews.last.map {
                 ($0.weaknesses + $0.suggestions).joined(separator: "; ")
             } ?? ""
@@ -213,6 +219,7 @@ public actor CoScientistEngine {
                 errors.append("evolution: \(error)")
                 evolved.append(h)  // keep the original on failure
             }
+            report("evolution", "evolved \(idx + 1)/\(topK.count)", completed: idx + 1, total: topK.count)
         }
         hypotheses = evolved
     }
@@ -259,15 +266,19 @@ public actor CoScientistEngine {
         let start = clock.now
         await body()
         metrics.agentExecutionTimes[name, default: 0] += seconds(since: start, clock: clock)
-        emitProgress(name)
+        report(name)
     }
 
-    private func emitProgress(_ phase: String) {
+    /// Emit a progress snapshot (phase boundary or sub-step).
+    private func report(_ phase: String, _ detail: String = "", completed: Int = 0, total: Int = 0) {
         guard let onProgress else { return }
         onProgress(
             WorkflowProgress(
                 phase: phase,
                 iteration: iteration,
+                detail: detail,
+                completed: completed,
+                total: total,
                 hypotheses: hypotheses.sorted { $0.eloRating > $1.eloRating },
                 metrics: metrics))
     }

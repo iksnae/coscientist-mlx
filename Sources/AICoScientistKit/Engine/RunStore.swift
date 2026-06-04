@@ -33,6 +33,50 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
             metaReviewSummary: result.metaReviewSummary
         )
     }
+
+    /// A human-readable Markdown report of the run (for sharing / export).
+    public func markdown() -> String {
+        var lines: [String] = ["# AI Co-Scientist — \(researchGoal)", ""]
+
+        lines.append("## Top hypotheses")
+        if hypotheses.isEmpty {
+            lines.append("_None._")
+        } else {
+            for (rank, h) in hypotheses.enumerated() {
+                lines.append(
+                    "\(rank + 1). **[Elo \(h.eloRating) · score \(String(format: "%.2f", h.score))]** "
+                    + h.text)
+                var meta: [String] = []
+                if let cluster = h.similarityClusterID { meta.append("cluster `\(cluster)`") }
+                if h.totalMatches > 0 {
+                    meta.append("win rate \(Int(h.winRate))% (\(h.totalMatches) matches)")
+                }
+                if !meta.isEmpty { lines.append("   - " + meta.joined(separator: " · ")) }
+            }
+        }
+
+        if !metaReviewSummary.isEmpty {
+            lines.append(contentsOf: ["", "## Meta-review", metaReviewSummary])
+        }
+
+        if !clusters.isEmpty {
+            lines.append(contentsOf: ["", "## Clusters"])
+            for c in clusters {
+                lines.append("- `\(c.clusterID)` — \(c.memberIDs.count) hypotheses")
+            }
+        }
+
+        lines.append(contentsOf: [
+            "", "## Metrics",
+            "- hypotheses: \(metrics.hypothesisCount)",
+            "- reviews: \(metrics.reviewsCount)",
+            "- tournament matches: \(metrics.tournamentsCount)",
+            "- evolutions: \(metrics.evolutionsCount)",
+            "- repair retries: \(metrics.repairAttempts)",
+            "- decode failures: \(metrics.decodeFailures)",
+        ])
+        return lines.joined(separator: "\n") + "\n"
+    }
 }
 
 /// Reads/writes `RunSnapshot`s as pretty, stable JSON. Replaces the reference's per-agent
