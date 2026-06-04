@@ -1,13 +1,11 @@
 %%{init: {'theme':'base','themeVariables':{'background':'#070b14','primaryColor':'#0e1726','primaryTextColor':'#e6edf3','primaryBorderColor':'#22d3ee','lineColor':'#38bdf8','fontFamily':'Inter,Helvetica,sans-serif','fontSize':'15px','clusterBkg':'#0b1220','clusterBorder':'#1e293b','titleColor':'#7dd3fc'}}}%%
 flowchart TB
-    schema(["Codable output type"]):::io --> P["Inject JSON schema<br/>into prompt"]:::step
-    P --> GEN["Generate"]:::step
-    GEN --> EX["Extract JSON<br/>strip reasoning"]:::step
-    EX --> VAL{"Valid against<br/>schema?"}:::dec
-    VAL -->|yes| OK(["Decoded value"]):::ok
-    VAL -->|no| REP["Repair-retry<br/>feed error back"]:::warn
-    REP --> GEN
-    REP -.->|exhausted| ERR(["AgentError<br/>recorded in metrics"]):::err
+    schema(["Codable output type"]):::io --> GEN["Generate · schema in prompt"]:::step
+    GEN --> VAL{"Extract + validate against schema"}:::dec
+    VAL -->|valid| OK(["Decoded value"]):::ok
+    VAL -->|invalid| REP["Repair-retry · feed error back"]:::warn
+    REP -->|retry| GEN
+    REP -->|exhausted| ERR(["AgentError · recorded in metrics"]):::err
 
     classDef io fill:#06281f,stroke:#34d399,color:#d1fae5,stroke-width:2px;
     classDef step fill:#0b2a4a,stroke:#38bdf8,color:#e6edf3,stroke-width:1.5px;

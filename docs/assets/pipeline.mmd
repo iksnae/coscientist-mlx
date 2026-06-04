@@ -1,27 +1,22 @@
 %%{init: {'theme':'base','themeVariables':{'background':'#070b14','primaryColor':'#0e1726','primaryTextColor':'#e6edf3','primaryBorderColor':'#22d3ee','lineColor':'#38bdf8','fontFamily':'Inter,Helvetica,sans-serif','fontSize':'15px','clusterBkg':'#0b1220','clusterBorder':'#1e293b','titleColor':'#7dd3fc'}}}%%
 flowchart TB
-    goal(["Research goal"]):::io --> G
+    goal(["Research goal"]):::io
+    goal --> SEED
 
     subgraph SEED["Initial pass"]
-        direction TB
-        G["1 · Generation"]:::gen --> R["2 · Reflection"]:::rev
-        R --> K["3 · Ranking"]:::rank
-        K --> T["4 · Tournament<br/>Elo k=24"]:::tour
+        direction LR
+        G["1 · Generation"]:::gen --> R["2 · Reflection"]:::rev --> K["3 · Ranking"]:::rank --> T["4 · Tournament · Elo k=24"]:::tour
     end
 
-    T --> META
+    SEED --> LOOP
 
     subgraph LOOP["Refinement loop x N"]
-        direction TB
-        META["5 · Meta-Review"]:::meta --> E["6 · Evolution<br/>top-k"]:::evo
-        E --> R2["Reflection"]:::rev
-        R2 --> K2["Ranking"]:::rank
-        K2 --> T2["Tournament"]:::tour
-        T2 --> P["7 · Proximity<br/>cosine clusters"]:::prox
+        direction LR
+        META["5 · Meta-Review"]:::meta --> E["6 · Evolution · top-k"]:::evo --> RR["Reflection ·<br/>Ranking · Tournament"]:::rev --> P["7 · Proximity ·<br/>cosine clusters"]:::prox
+        P -. repeat .-> META
     end
 
-    P -. repeat .-> META
-    P --> OUT(["Ranked hypotheses + clusters"]):::io
+    LOOP --> OUT(["Ranked hypotheses + clusters"]):::io
 
     classDef io fill:#06281f,stroke:#34d399,color:#d1fae5,stroke-width:2px;
     classDef gen fill:#0b2a4a,stroke:#38bdf8,color:#e6edf3,stroke-width:1.5px;
@@ -31,4 +26,3 @@ flowchart TB
     classDef meta fill:#3a1f3a,stroke:#f0abfc,color:#fce7f3,stroke-width:1.5px;
     classDef evo fill:#0e3030,stroke:#2dd4bf,color:#ccfbf1,stroke-width:1.5px;
     classDef prox fill:#3a2e12,stroke:#fbbf24,color:#fef3c7,stroke-width:1.5px;
-    classDef ghost fill:transparent,stroke:transparent,color:#94a3b8;

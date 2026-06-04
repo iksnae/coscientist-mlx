@@ -1,0 +1,46 @@
+%%{init: {'theme':'base','themeVariables':{'background':'#070b14','primaryColor':'#0e1726','primaryTextColor':'#e6edf3','primaryBorderColor':'#22d3ee','lineColor':'#38bdf8','fontFamily':'Inter,Helvetica,sans-serif','fontSize':'14px','clusterBkg':'#0b1220','clusterBorder':'#1e293b','titleColor':'#7dd3fc'}}}%%
+flowchart TB
+    sci(["Scientist"]):::person --> goal["Research goal · run config"]:::io
+    goal --> SYS
+
+    subgraph SYS["AI co-scientist · multi-agent engine"]
+        direction TB
+        subgraph PASS1["Initial pass"]
+            direction LR
+            GEN["Generation"]:::gen --> REF["Reflection"]:::rev --> RANK["Ranking"]:::rank --> TOUR["Tournament<br/>Elo k=24"]:::tour
+        end
+        subgraph PASS2["Refinement loop x N"]
+            direction LR
+            META["Meta-Review"]:::meta --> EVO["Evolution"]:::evo --> RR["Reflection ·<br/>Ranking · Tournament"]:::rev --> PROX["Proximity<br/>clusters"]:::prox
+            PROX -. "self-improving" .-> META
+        end
+        PASS1 --> PASS2
+    end
+
+    SYS --> RES
+    SYS -. "routes each stage" .-> BACK
+
+    subgraph RES["Results → returned to scientist"]
+        direction LR
+        OUT["Top-ranked + meta-review + clusters"]:::io --> SNAP["RunStore · JSON"]:::muted
+    end
+
+    subgraph BACK["Backends · DecoderRouting"]
+        direction LR
+        MLX["On-device MLX<br/>Metal · private"]:::mlx
+        REM["Remote<br/>OpenAI-compatible"]:::rem
+        DEC["Schema decode<br/>+ repair-retry"]:::muted
+    end
+
+    classDef person fill:#10233b,stroke:#7dd3fc,color:#e6edf3,stroke-width:2px;
+    classDef io fill:#06281f,stroke:#34d399,color:#d1fae5,stroke-width:2px;
+    classDef muted fill:#0e1726,stroke:#475569,color:#cbd5e1;
+    classDef gen fill:#0b2a4a,stroke:#38bdf8,color:#e6edf3,stroke-width:1.5px;
+    classDef rev fill:#0e2540,stroke:#22d3ee,color:#e6edf3,stroke-width:1.5px;
+    classDef rank fill:#10233b,stroke:#60a5fa,color:#e6edf3,stroke-width:1.5px;
+    classDef tour fill:#2a1e4a,stroke:#a78bfa,color:#ede9fe,stroke-width:1.5px;
+    classDef meta fill:#3a1f3a,stroke:#f0abfc,color:#fce7f3,stroke-width:1.5px;
+    classDef evo fill:#0e3030,stroke:#2dd4bf,color:#ccfbf1,stroke-width:1.5px;
+    classDef prox fill:#3a2e12,stroke:#fbbf24,color:#fef3c7,stroke-width:1.5px;
+    classDef mlx fill:#0e3030,stroke:#2dd4bf,color:#ccfbf1,stroke-width:1.5px;
+    classDef rem fill:#3a2e12,stroke:#fbbf24,color:#fef3c7,stroke-width:1.5px;

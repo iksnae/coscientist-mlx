@@ -35,6 +35,16 @@ reimplementation of that methodology to a native Swift stack running on
 > [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey and tiered recommendations,
 > and [`docs/IOS.md`](docs/IOS.md) for on-device iPhone/iPad enablement.
 
+## System design
+
+The scientist states a research goal; the engine generates, debates, and evolves
+hypotheses across seven agents in a self-improving loop, routes each stage to an
+on-device or remote backend, and returns the top-ranked hypotheses with a meta-review and
+clusters. *(Our adaptation, accurate to this port — cf. Google's "AI co-scientist system
+design" in [the paper](https://arxiv.org/abs/2502.18864).)*
+
+![System design: a scientist provides a research goal and run config; the AI co-scientist multi-agent engine runs Generation → Reflection → Ranking → Tournament → Meta-Review → Evolution → Proximity in a self-improving loop ×N; each stage is routed by DecoderRouting to an on-device MLX or remote OpenAI-compatible backend with schema-constrained decoding; results are the top-ranked hypotheses plus meta-review and clusters, persisted via RunStore and returned to the scientist to review and refine.](docs/assets/system-design.png)
+
 ## Run the full workflow
 
 ```bash
