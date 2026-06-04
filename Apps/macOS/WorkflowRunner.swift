@@ -80,12 +80,23 @@ final class WorkflowRunner {
 
             let router: any DecoderRouting
             if study.useRemoteJudge, settings.remoteReady, let baseURL = URL(string: settings.remoteBaseURL) {
-                let remote = RemoteLanguageModel(
-                    model: settings.remoteModel, apiKey: settings.openAIKey, baseURL: baseURL)
-                let remoteDecoder = SchemaConstrainedDecoder(model: remote, metrics: decodeMetrics)
-                router = RoleDecoderRouter(
-                    default: localDecoder,
-                    overrides: [.reflection: remoteDecoder, .tournament: remoteDecoder])
+                // Explicit per-role assignments win; with none, fall back to the classic
+                // reflection + tournament judge split over the configured remote model.
+                var backends = settings.roleBackends
+                if backends.isEmpty {
+                    backends = [
+                        .reflection: .remote(settings.remoteModel),
+                        .tournament: .remote(settings.remoteModel),
+                    ]
+                }
+                let apiKey = settings.openAIKey
+                let makeRemote: (String) -> any SchemaConstrainedDecoding = { id in
+                    SchemaConstrainedDecoder(
+                        model: RemoteLanguageModel(model: id, apiKey: apiKey, baseURL: baseURL),
+                        metrics: decodeMetrics)
+                }
+                router = RoleDecoderRouter.backed(
+                    default: localDecoder, backends: backends, makeRemote: makeRemote)
             } else {
                 router = StaticDecoderRouter(localDecoder)
             }
