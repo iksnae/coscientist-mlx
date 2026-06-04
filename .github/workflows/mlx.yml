@@ -56,16 +56,22 @@ jobs:
             && echo "✅ Metal shaders compiled" \
             || (echo "❌ metallib missing" && exit 1)
 
-  # Runtime inference guard (model load + generate). Requires a Metal GPU, which GitHub-hosted
-  # runners lack — enable on a self-hosted Apple Silicon runner labelled [self-hosted, macОS, gpu]:
-  #
-  # runtime-integration:
-  #   runs-on: [self-hosted, macOS, gpu]
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - name: Integration tests (real model)
-  #       env:
-  #         RUN_MLX_INTEGRATION: "1"
-  #       run: |
-  #         xcodebuild test -scheme coscientist-mlx-Package \
-  #           -destination 'platform=macOS' -skipMacroValidation -derivedDataPath .xcbuild
+  # Runtime inference guard: real model load + generate + schema-decode + embeddings.
+  # Requires a Metal GPU (absent on GitHub-hosted runners) → runs on a self-hosted Apple
+  # Silicon runner labelled [self-hosted, macOS, gpu]. Reuses the host's Hugging Face cache.
+  runtime-integration:
+    name: Runtime inference guard (self-hosted GPU)
+    runs-on: [self-hosted, macOS, gpu]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Swift version
+        run: swift --version
+      - name: Integration tests (real model load + generate)
+        env:
+          RUN_MLX_INTEGRATION: "1"
+        run: |
+          xcodebuild test -scheme coscientist-mlx-Package \
+            -destination 'platform=macOS' \
+            -skipMacroValidation \
+            -derivedDataPath .xcbuild \
+            -only-testing:AICoScientistMLXTests
