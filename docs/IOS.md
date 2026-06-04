@@ -85,8 +85,10 @@ this variant — clear caches between batches and watch for a leak.
 
 ## 4. Practical gotchas (the ones that kill you)
 
-- **GPU/Metal cache cap — the #1 tuning knob.** Set `MLX.GPU.set(cacheLimit:)` low (LLMEval
-  uses 20 MB on iOS) so the framework doesn't hoard buffers and trip jetsam.
+- **GPU/Metal cache cap — the #1 tuning knob.** Set the GPU cache limit low (LLMEval uses
+  20 MB on iOS) so the framework doesn't hoard buffers and trip jetsam. In current mlx-swift
+  the API is **`Memory.cacheLimit = 20 * 1024 * 1024`** (`MLX.GPU.set(cacheLimit:)` is
+  deprecated — see `.claude/skills/mlx-swift/references/memory-and-perf.md`).
 - **Background = hard kill.** iOS forbids creating a Metal compute context in the background;
   backgrounded GPU work throws `IOGPUMetalError: Insufficient Permission` and crashes.
   **Inference is foreground-only** — checkpoint/pause on `scenePhase` change. A long

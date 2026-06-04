@@ -106,7 +106,7 @@ public struct WorkflowResult: Codable, Sendable {
 }
 
 /// Per-run execution metrics, mirroring the reference `ExecutionMetrics`.
-public struct ExecutionMetrics: Codable, Sendable {
+public struct ExecutionMetrics: Codable, Sendable, Equatable {
     public var hypothesisCount: Int
     public var reviewsCount: Int
     public var tournamentsCount: Int
