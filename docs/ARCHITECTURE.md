@@ -174,7 +174,8 @@ injected seeded PRNG (`SeededGenerator`) for reproducibility; Elo (k=24) is the
 authoritative final ranking, initial order is by review score. Reflection/evolution are
 sequential for now (correctness first); `TaskGroup` batching is M7. Embedding-based
 proximity replaces the LLM proximity agent in M5. Runnable via `aicoscientist "<goal>" --run`.
-Persistence (`save/loadState`) is not yet implemented — tracked for a later milestone.
+Persistence is implemented via `RunSnapshot`/`RunStore` (Codable JSON; CLI `--save`), enough
+to save results and seed a future engine for continued refinement.
 
 ---
 

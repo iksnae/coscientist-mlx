@@ -1,6 +1,7 @@
 import AICoScientistKit
 import AICoScientistMLX
 import ArgumentParser
+import Foundation
 
 @main
 struct AICoScientistCommand: AsyncParsableCommand {
@@ -23,6 +24,9 @@ struct AICoScientistCommand: AsyncParsableCommand {
 
     @Option(help: "Hypotheses to generate initially.")
     var count = 6
+
+    @Option(help: "Path to save the run result as JSON.")
+    var save: String?
 
     mutating func run() async throws {
         print("coscientist-mlx \(BuildInfo.version)")
@@ -72,6 +76,12 @@ struct AICoScientistCommand: AsyncParsableCommand {
         if !result.errors.isEmpty {
             print("\n--- Errors (\(result.errors.count)) ---")
             result.errors.forEach { print("• \($0)") }
+        }
+
+        if let save {
+            let url = URL(fileURLWithPath: save)
+            try RunStore.save(RunSnapshot(researchGoal: goal, result: result), to: url)
+            print("\nSaved run to \(url.path)")
         }
     }
 }

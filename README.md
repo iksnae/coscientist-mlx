@@ -9,7 +9,9 @@ Silicon**, fully offline.
 > decoding + M3 the seven agents + M4 the `CoScientistEngine` orchestrating the full workflow
 > + M5 embedding-based proximity (`MLXEmbedders` → cosine → union-find clustering) replacing
 > the reference's LLM-judged, string-matched clustering. Runnable end-to-end via
-> `aicoscientist "<goal>" --run`. Next: M6 (state persistence + parity CLI polish). See
+> `aicoscientist "<goal>" --run` (`--save <path>` to persist results). Verified on a real
+> local run (Qwen3-4B + Qwen3-Embedding-0.6B). Next: per-stage routing + remote adapter,
+> then iOS. See
 > [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and milestones,
 > [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey and tiered recommendations,
 > and [`docs/IOS.md`](docs/IOS.md) for on-device iPhone/iPad enablement.
