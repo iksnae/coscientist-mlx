@@ -66,6 +66,18 @@ final class WorkflowRunner {
         timeline = []; lastResult = nil; downloadProgress = nil
 
         let store = SettingsStore.shared
+
+        // Disk guard: refuse to start a download that the disk can't hold (a truncated
+        // download yields a corrupt, unloadable model).
+        for key in [store.generatorKey, store.embedderKey] {
+            if case let .insufficientDisk(needed, free) = DownloadGuard.decide(forKeyOrID: key) {
+                status = "Not enough disk to download \(key): need ~\(gb(needed)), \(gb(free)) free. "
+                    + "Free space (Settings ▸ Models) or pick a smaller model."
+                running = false
+                return
+            }
+        }
+
         do {
             let model = try await MLXLanguageModel.load(store.generatorKey) { [weak self] fraction in
                 Task { @MainActor in self?.downloadProgress = fraction }
@@ -117,6 +129,10 @@ final class WorkflowRunner {
             status = "Error: \(error)"
         }
         running = false
+    }
+
+    private func gb(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
     }
 
     /// Build an exportable snapshot of the most recent run.
