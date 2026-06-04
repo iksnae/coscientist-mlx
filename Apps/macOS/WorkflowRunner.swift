@@ -25,6 +25,17 @@ final class WorkflowRunner {
     private(set) var errors: [String] = []
     private(set) var activity: [String] = []
     private(set) var downloadProgress: Double?
+    private(set) var timeline: [ProgressPoint] = []
+
+    /// A point in the run's Elo timeline, captured after each phase/sub-step.
+    struct ProgressPoint: Identifiable, Sendable {
+        let id = UUID()
+        let step: Int
+        let phase: String
+        let topElo: Int
+        let avgElo: Double
+        let poolSize: Int
+    }
 
     private var lastResult: WorkflowResult?
     private var task: Task<Void, Never>?
@@ -52,7 +63,7 @@ final class WorkflowRunner {
         status = "Loading models (first run downloads from Hugging Face)…"
         phase = ""; detail = ""; completed = 0; total = 0
         hypotheses = []; errors = []; activity = []; metrics = ExecutionMetrics()
-        lastResult = nil; downloadProgress = nil
+        timeline = []; lastResult = nil; downloadProgress = nil
 
         do {
             let model = try await MLXLanguageModel.load(generatorKey) { [weak self] fraction in
@@ -110,5 +121,16 @@ final class WorkflowRunner {
             + (progress.detail.isEmpty ? "" : " · \(progress.detail)")
         activity.append(line)
         if activity.count > 200 { activity.removeFirst(activity.count - 200) }
+
+        if !progress.hypotheses.isEmpty {
+            let elos = progress.hypotheses.map(\.eloRating)
+            timeline.append(
+                ProgressPoint(
+                    step: timeline.count,
+                    phase: progress.phase,
+                    topElo: elos.max() ?? 1200,
+                    avgElo: Double(elos.reduce(0, +)) / Double(elos.count),
+                    poolSize: elos.count))
+        }
     }
 }
