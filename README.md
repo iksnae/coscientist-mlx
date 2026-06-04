@@ -5,9 +5,12 @@ a multi-agent pipeline that generates, peer-reviews, ranks (via Elo tournaments)
 iteratively evolves scientific research hypotheses — running **local open models on Apple
 Silicon**, fully offline.
 
-> Status: **M0 — foundation.** A tested, MLX-free skeleton (domain types, Elo, tolerant
-> JSON, protocol boundaries, mock backend). Inference (MLX) lands in M1. See
-> [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and milestones.
+> Status: **M2 — schema-constrained decoding.** M0 foundation + M1 MLX inference adapter
+> (`MLXLanguageModel`, local models on Apple Silicon) + M2 schema-driven decoding
+> (typed `JSONSchema` per agent output, prompt injection, validation, repair-retry). The
+> agent engine lands in M4. See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full
+> design and milestones, and [`docs/MODELS.md`](docs/MODELS.md) for the open-model survey
+> and tiered recommendations.
 
 ## Why a port
 

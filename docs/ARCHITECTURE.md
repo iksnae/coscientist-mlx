@@ -107,9 +107,21 @@ Fallback ladder (per call, configurable):
    the decode error back to the model once).
 3. Hard fail → typed `AgentError`, surfaced in `WorkflowResult.errors` (engine never crashes).
 
+**Status (M2, landed):** the portable, fully-tested form is in place — a typed `JSONSchema`
+per agent output (single source of truth) drives prompt injection **and** post-generation
+validation, with schema-aware repair-retry (`SchemaConstrainedDecoder`). This is the
+fallback ladder's steps 1-guidance + 2 + 3, all CI-verifiable with a mock model. The hard
+**GPU logit-masking** form (step 1 proper — making invalid tokens impossible via a
+`LogitProcessor`, optionally `mlx-swift-structured`) is deferred behind the same
+`SchemaConstrainedDecoding` protocol: it cannot be CI-verified (needs a GPU + model) and
+`mlx-swift-structured` is `0.1.0`/single-maintainer, so it is gated to the integration
+target rather than made foundational.
+
 **Models:** quantized 4-bit open models from the MLX community — Qwen2.5-7B-Instruct as
 default, with Llama-3.1-8B / Phi / Gemma swappable via config. Embeddings via a small
-MLX embedder (e.g. `bge`/`gte` family) in `MLXEmbedders`.
+MLX embedder (e.g. `bge`/`gte` family) in `MLXEmbedders`. The current open-model survey
+and a tiered (16/32/64 GB) recommendation that supersedes these placeholders lives in
+[`MODELS.md`](MODELS.md).
 
 ---
 

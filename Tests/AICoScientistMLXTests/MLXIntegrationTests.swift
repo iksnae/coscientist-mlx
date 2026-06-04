@@ -36,4 +36,19 @@ struct MLXIntegrationTests {
         )
         #expect(verdict.winner == .a || verdict.winner == .b)
     }
+
+    @Test("Schema-constrained decode validates a real model's verdict against the schema")
+    func schemaConstrainedDecode() async throws {
+        let model = try await MLXLanguageModel.load()
+        let decoder = SchemaConstrainedDecoder(model: model)
+        // No hand-written JSON instructions: the schema is injected automatically.
+        let verdict = try await decoder.decode(
+            TournamentJudgment.self,
+            system: "You are a careful scientific judge.",
+            user: "A: Water boils at 100°C at sea level. B: Water boils at 5°C at sea level. Which is sounder?",
+            config: .deterministic
+        )
+        #expect(verdict.winner == .a || verdict.winner == .b)
+        #expect(!verdict.rationale.isEmpty)
+    }
 }
