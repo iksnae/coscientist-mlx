@@ -18,9 +18,10 @@ GitHub Pages.
 M0–M5 shipped as numbered milestones (below). The work after M5 — the
 CLI, hybrid routing, model catalog, demo apps, and docs — shipped as
 feature PRs rather than numbered milestones. The milestone loop
-(`milestone-planner` → `milestone-grinder`) is now in use: **M6 (agent
-tool-use loop)** and **M7 (hosted per-agent backing)** have landed. The
-next numbered milestone is **M8**.
+(`milestone-planner` → `milestone-grinder`) is now in use: **M6** (agent
+tool-use loop), **M7** (hosted per-agent backing), and **M8** (hypothesis
+selection + inspector), and **M9** (transparent activity) have landed.
+The next numbered milestone is **M10**.
 
 Agents can now ground hypothesis generation and reflection in real
 sources by calling research tools (arXiv, PubMed, web) through a
@@ -72,6 +73,12 @@ at planning time.
   (`RemoteModels.list`) + `RoleBackend`/`RoleDecoderRouter.backed`; CLI
   `--agent-model`/`--list-remote-models`; app presets + per-agent pickers.
   See `docs/MILESTONE-7-CLOSEOUT.md`.
+- **M8 — Hypothesis selection + inspector.** Pure `HypothesisDetail` +
+  `GraphSelection` (Kit); selectable results list + tappable graph nodes
+  driving a shared inspector (macOS). See `docs/MILESTONE-8-CLOSEOUT.md`.
+- **M9 — Transparent activity.** `ActivityEvent` + persisted
+  `RunSnapshot.activity` (Kit); rich feed with per-phase icons, counts,
+  and a sticky Elo sparkline (macOS). See `docs/MILESTONE-9-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -94,14 +101,8 @@ A batch of milestones is drafted and dependency-sequenced
 (`milestone-planner`, 2026-06-04; results-presentation UX pulled ahead of
 the Foundation Models + optimization work on operator signal):
 
-- **M8 — Hypothesis selection + inspector.** Select a hypothesis (list +
-  graph) and inspect its full detail — reviews, score breakdown, record,
-  cluster, lineage. *(draft, next to grind)*
-- **M9 — Transparent activity.** Verbose, persisted activity feed with
-  per-phase icons, counts, tool calls, and inline animated sparklines.
-  *(draft)*
 - **M10 — Foundation Models backend.** Apple's native tool calling as an
-  optional, availability-gated backend. *(draft, deferred from M8)*
+  optional, availability-gated backend. *(draft, next to grind)*
 - **M11 — Inference optimization.** Prompt/KV cache reuse + quant tiers.
   *(draft)*
 

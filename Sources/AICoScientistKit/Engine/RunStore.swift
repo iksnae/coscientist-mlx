@@ -8,19 +8,23 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
     public var metrics: ExecutionMetrics
     public var clusters: [SimilarityCluster]
     public var metaReviewSummary: String
+    /// The run's activity feed (M9). Optional on the wire — legacy snapshots decode to `[]`.
+    public var activity: [ActivityEvent]
 
     public init(
         researchGoal: String,
         hypotheses: [Hypothesis],
         metrics: ExecutionMetrics,
         clusters: [SimilarityCluster],
-        metaReviewSummary: String
+        metaReviewSummary: String,
+        activity: [ActivityEvent] = []
     ) {
         self.researchGoal = researchGoal
         self.hypotheses = hypotheses
         self.metrics = metrics
         self.clusters = clusters
         self.metaReviewSummary = metaReviewSummary
+        self.activity = activity
     }
 
     /// Build a snapshot from a completed workflow result.
@@ -32,6 +36,21 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
             clusters: result.clusters,
             metaReviewSummary: result.metaReviewSummary
         )
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case researchGoal, hypotheses, metrics, clusters, metaReviewSummary, activity
+    }
+
+    /// Decode tolerantly: `activity` was added in M9, so older snapshots omit it.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        researchGoal = try c.decode(String.self, forKey: .researchGoal)
+        hypotheses = try c.decode([Hypothesis].self, forKey: .hypotheses)
+        metrics = try c.decode(ExecutionMetrics.self, forKey: .metrics)
+        clusters = try c.decode([SimilarityCluster].self, forKey: .clusters)
+        metaReviewSummary = try c.decode(String.self, forKey: .metaReviewSummary)
+        activity = try c.decodeIfPresent([ActivityEvent].self, forKey: .activity) ?? []
     }
 
     /// A human-readable Markdown report of the run (for sharing / export).
