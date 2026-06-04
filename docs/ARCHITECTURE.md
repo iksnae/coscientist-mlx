@@ -14,6 +14,8 @@ reference, then superior where the local + native stack allows.
 > ([arXiv:2408.06292](https://arxiv.org/abs/2408.06292)), a separate system. Full
 > references and citation live in the [README](../README.md#references).
 
+![Layering: the aicoscientist CLI drives the CoScientist Engine and seven agents inside AICoScientistKit, which depends only on the LanguageModel and EmbeddingModel protocols; AICoScientistMLX (on-device) and AICoScientistRemote (hosted) implement those protocols.](assets/architecture.png)
+
 Decisions locked in:
 - **Form factor:** SPM library (`AICoScientistKit`) + CLI (`aicoscientist`). App can sit on top later.
 - **Inference:** MLX-Swift + **schema-constrained decoding**, Codable-first (see §3).
