@@ -23,12 +23,15 @@ public struct ReflectionAgent: Agent {
         Score each dimension from 0.0 to 1.0:
         - scientificSoundness: plausible and consistent with existing knowledge
         - novelty: proposes something new or original
+        - relevance: addresses the stated research goal
         - testability: can be tested or investigated with scientific methods
+        - clarity: clearly and precisely stated
         - impact: potential scientific or practical impact if validated
 
         Scoring guide: 0.0–0.2 poor, 0.2–0.4 fair, 0.4–0.6 good, 0.6–0.8 very good, \
-        0.8–1.0 excellent. Provide a concise review summary plus specific strengths, \
-        weaknesses, and suggestions for improvement.
+        0.8–1.0 excellent. Also state any safety or ethical concerns (or "None identified"). \
+        Provide a concise review summary plus specific strengths, weaknesses, and suggestions \
+        for improvement.
         """
 
     public func userPrompt(for input: ReflectionInput) -> String {

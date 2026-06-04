@@ -4,35 +4,43 @@ import Foundation
 /// typed values; in M2 the language model is constrained to emit JSON that decodes
 /// directly into them (replacing the reference's best-effort `_safely_parse_json`).
 
-/// Per-dimension review scores (0.0–1.0), mirroring the reference `ReviewScores`.
+/// Per-dimension review scores (0.0–1.0), mirroring the reference's six criteria.
 public struct ReviewScores: Codable, Sendable, Equatable {
     public var scientificSoundness: Double
     public var novelty: Double
+    public var relevance: Double
     public var testability: Double
+    public var clarity: Double
     public var impact: Double
 
     public init(
         scientificSoundness: Double,
         novelty: Double,
+        relevance: Double,
         testability: Double,
+        clarity: Double,
         impact: Double
     ) {
         self.scientificSoundness = scientificSoundness
         self.novelty = novelty
+        self.relevance = relevance
         self.testability = testability
+        self.clarity = clarity
         self.impact = impact
     }
 
-    /// Mean across the four dimensions — the overall hypothesis score.
+    /// Mean across the six dimensions — the overall hypothesis score.
     public var overall: Double {
-        (scientificSoundness + novelty + testability + impact) / 4.0
+        (scientificSoundness + novelty + relevance + testability + clarity + impact) / 6.0
     }
 }
 
-/// A single peer review produced by the reflection agent.
+/// A single peer review produced by the reflection agent. Mirrors the reference's review:
+/// six-criterion scores, a summary, qualitative feedback, and a safety/ethical assessment.
 public struct HypothesisReview: Codable, Sendable, Equatable {
     public var scores: ReviewScores
     public var reviewSummary: String
+    public var safetyEthicalConcerns: String
     public var strengths: [String]
     public var weaknesses: [String]
     public var suggestions: [String]
@@ -40,15 +48,31 @@ public struct HypothesisReview: Codable, Sendable, Equatable {
     public init(
         scores: ReviewScores,
         reviewSummary: String,
+        safetyEthicalConcerns: String = "None identified",
         strengths: [String] = [],
         weaknesses: [String] = [],
         suggestions: [String] = []
     ) {
         self.scores = scores
         self.reviewSummary = reviewSummary
+        self.safetyEthicalConcerns = safetyEthicalConcerns
         self.strengths = strengths
         self.weaknesses = weaknesses
         self.suggestions = suggestions
+    }
+
+    // Lenient decoding: a model may omit qualitative lists or the safety field even when
+    // the schema requests them; default rather than fail (the schema decoder still nudges
+    // for them on the first pass).
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        scores = try c.decode(ReviewScores.self, forKey: .scores)
+        reviewSummary = try c.decode(String.self, forKey: .reviewSummary)
+        safetyEthicalConcerns =
+            try c.decodeIfPresent(String.self, forKey: .safetyEthicalConcerns) ?? "None identified"
+        strengths = try c.decodeIfPresent([String].self, forKey: .strengths) ?? []
+        weaknesses = try c.decodeIfPresent([String].self, forKey: .weaknesses) ?? []
+        suggestions = try c.decodeIfPresent([String].self, forKey: .suggestions) ?? []
     }
 }
 

@@ -47,8 +47,8 @@ struct JSONSchemaTests {
     @Test("Nested object schema (ReviewScores inside HypothesisReview) validates")
     func nestedSchema() throws {
         let valid = try JSONValue.parse(#"""
-        {"scores":{"scientificSoundness":0.8,"novelty":0.7,"testability":0.9,"impact":0.6},
-         "reviewSummary":"solid","strengths":["a"],"weaknesses":[],"suggestions":[]}
+        {"scores":{"scientificSoundness":0.8,"novelty":0.7,"relevance":0.75,"testability":0.9,"clarity":0.8,"impact":0.6},
+         "reviewSummary":"solid","safetyEthicalConcerns":"None identified","strengths":["a"],"weaknesses":[],"suggestions":[]}
         """#)
         #expect(HypothesisReview.jsonSchema.validate(valid).isEmpty)
 
