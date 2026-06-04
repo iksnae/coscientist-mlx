@@ -20,8 +20,9 @@ CLI, hybrid routing, model catalog, demo apps, and docs — shipped as
 feature PRs rather than numbered milestones. The milestone loop
 (`milestone-planner` → `milestone-grinder`) is now in use: **M6** (agent
 tool-use loop), **M7** (hosted per-agent backing), and **M8** (hypothesis
-selection + inspector), and **M9** (transparent activity) have landed.
-The next numbered milestone is **M10**.
+selection + inspector), **M9** (transparent activity), and **M10**
+(Foundation Models backend) have landed. The next numbered milestone is
+**M11**.
 
 Agents can now ground hypothesis generation and reflection in real
 sources by calling research tools (arXiv, PubMed, web) through a
@@ -79,6 +80,9 @@ at planning time.
 - **M9 — Transparent activity.** `ActivityEvent` + persisted
   `RunSnapshot.activity` (Kit); rich feed with per-phase icons, counts,
   and a sticky Elo sparkline (macOS). See `docs/MILESTONE-9-CLOSEOUT.md`.
+- **M10 — Foundation Models backend.** Gated `AICoScientistFoundationModels`
+  adapter (`LanguageModelSession`) + pure `InferenceBackend` resolver; CLI
+  `--backend` + app picker. See `docs/MILESTONE-10-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -101,10 +105,8 @@ A batch of milestones is drafted and dependency-sequenced
 (`milestone-planner`, 2026-06-04; results-presentation UX pulled ahead of
 the Foundation Models + optimization work on operator signal):
 
-- **M10 — Foundation Models backend.** Apple's native tool calling as an
-  optional, availability-gated backend. *(draft, next to grind)*
 - **M11 — Inference optimization.** Prompt/KV cache reuse + quant tiers.
-  *(draft)*
+  *(draft, next to grind)*
 
 Further out (theme, not yet drafted):
 

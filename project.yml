@@ -72,5 +72,7 @@ targets:
         product: AICoScientistMLX
       - package: coscientist-mlx
         product: AICoScientistRemote
+      - package: coscientist-mlx
+        product: AICoScientistFoundationModels
       - package: Grape
         product: Grape
