@@ -89,13 +89,46 @@ private struct ProvidersSettings: View {
     var body: some View {
         @Bindable var store = store
         Form {
-            Section("Remote judge (hybrid)") {
-                Toggle("Route reflection + tournament to a remote model", isOn: $store.remoteEnabled)
+            Section("Hosted provider") {
+                Toggle("Enable hosted models", isOn: $store.remoteEnabled)
                 TextField("Base URL", text: $store.remoteBaseURL).disabled(!store.remoteEnabled)
-                TextField("Model", text: $store.remoteModel).disabled(!store.remoteEnabled)
                 SecureField("API key", text: $store.openAIKey).disabled(!store.remoteEnabled)
-                Text("OpenAI-compatible. Generation, evolution, and embeddings stay on-device; "
-                    + "the key is stored in your Keychain.")
+                HStack {
+                    defaultModelField($store)
+                    Button {
+                        Task { await store.refreshModels() }
+                    } label: {
+                        Label(store.isFetchingModels ? "Fetching…" : "Refresh",
+                            systemImage: "arrow.clockwise")
+                    }
+                    .disabled(!store.remoteEnabled || store.isFetchingModels)
+                }
+                if let error = store.modelsError {
+                    Text(error).font(.caption).foregroundStyle(.red)
+                }
+                Text("OpenAI-compatible. Generation, evolution, and embeddings stay on-device "
+                    + "unless you back those agents below; the key is stored in your Keychain.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Section("Per-agent backing") {
+                HStack {
+                    Button("All local") { store.applyPreset(.allLocal) }
+                    Button("Hosted judge") { store.applyPreset(.hostedJudge) }
+                    Button("Hosted all") { store.applyPreset(.hostedAll) }
+                }
+                .disabled(!store.remoteEnabled)
+                DisclosureGroup("Advanced — assign each agent") {
+                    ForEach(AgentRole.allCases, id: \.self) { role in
+                        Picker(role.rawValue, selection: backendBinding(role, store)) {
+                            Text("Local").tag("")
+                            ForEach(modelChoices, id: \.self) { Text($0).tag($0) }
+                        }
+                    }
+                }
+                .disabled(!store.remoteEnabled)
+                Text("“Local” keeps an agent on the on-device model. Hosted backing makes "
+                    + "tool-use (--tools) more reliable for that agent.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
@@ -107,5 +140,32 @@ private struct ProvidersSettings: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    /// The default remote model — a picker over discovered models, or free text before a fetch.
+    @ViewBuilder private func defaultModelField(_ store: Bindable<SettingsStore>) -> some View {
+        if store.wrappedValue.fetchedModels.isEmpty {
+            TextField("Model", text: store.remoteModel).disabled(!store.wrappedValue.remoteEnabled)
+        } else {
+            Picker("Model", selection: store.remoteModel) {
+                ForEach(store.wrappedValue.fetchedModels, id: \.self) { Text($0).tag($0) }
+            }
+            .disabled(!store.wrappedValue.remoteEnabled)
+        }
+    }
+
+    /// Model ids offered in the per-agent pickers: discovered list, falling back to the default
+    /// model, always including any already-assigned ids so a selection is never dropped.
+    private var modelChoices: [String] {
+        var ids = store.fetchedModels
+        if ids.isEmpty, !store.remoteModel.isEmpty { ids = [store.remoteModel] }
+        for id in store.agentModels.values where !ids.contains(id) { ids.append(id) }
+        return ids
+    }
+
+    private func backendBinding(_ role: AgentRole, _ store: SettingsStore) -> Binding<String> {
+        Binding(
+            get: { store.agentModels[role.rawValue] ?? "" },
+            set: { store.assign(role, to: $0.isEmpty ? nil : $0) })
     }
 }

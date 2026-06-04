@@ -42,12 +42,26 @@ struct AICoScientistCommand: AsyncParsableCommand {
     @Flag(help: "Ground generation + reflection with research tools (arXiv, PubMed; web search when TAVILY_API_KEY is set).")
     var tools = false
 
+    @Flag(help: "List the hosted provider's models (GET {base-url}/models, uses OPENAI_API_KEY) and exit.")
+    var listRemoteModels = false
+
+    @Option(name: .customLong("agent-model"),
+        help: "Back a role with a hosted model, e.g. --agent-model reflection=gpt-4o. Repeatable.")
+    var agentModels: [String] = []
+
+    @Option(help: "OpenAI-compatible API root for hosted models.")
+    var baseURL = "https://api.openai.com/v1"
+
     @Option(help: "Resume a saved run (JSON path): continue refinement, skipping generation.")
     var resumePath: String?
 
     mutating func run() async throws {
         if listModels {
             Self.printCatalog()
+            return
+        }
+        if listRemoteModels {
+            try await listRemoteModelsAndExit()
             return
         }
         guard !goal.isEmpty || resumePath != nil else {
@@ -88,6 +102,26 @@ struct AICoScientistCommand: AsyncParsableCommand {
         return ToolRegistry(tools)
     }
 
+    /// Parse a `role=modelId` spec into a role + id, or nil if malformed / unknown role.
+    static func parseAgentModel(_ spec: String) -> (AgentRole, String)? {
+        let parts = spec.split(separator: "=", maxSplits: 1).map(String.init)
+        guard parts.count == 2, let role = AgentRole(rawValue: parts[0]),
+            !parts[1].isEmpty
+        else { return nil }
+        return (role, parts[1])
+    }
+
+    private func listRemoteModelsAndExit() async throws {
+        let root = URL(string: baseURL) ?? URL(string: "https://api.openai.com/v1")!
+        print("Fetching models from \(root.appendingPathComponent("models").absoluteString)…")
+        let ids = try await RemoteModels.list(baseURL: root)
+        guard !ids.isEmpty else { print("No models returned."); return }
+        print("Available models (\(ids.count)):")
+        ids.forEach { print("  \($0)") }
+        print("\nBack a role with: --agent-model <role>=<id>  (roles: "
+            + AgentRole.allCases.map(\.rawValue).joined(separator: ", ") + ")")
+    }
+
     private func runProbe() async throws {
         print("Loading local model (first run downloads from Hugging Face)…")
         let llm = try await MLXLanguageModel.load(modelKey ?? ModelCatalog.defaultGeneratorKey)
@@ -106,13 +140,31 @@ struct AICoScientistCommand: AsyncParsableCommand {
         let decodeMetrics = DecodeMetrics()
         let localDecoder = SchemaConstrainedDecoder(model: llm, metrics: decodeMetrics)
 
-        var overrides: [AgentRole: any SchemaConstrainedDecoding] = [:]
+        // Per-role remote backings: --remote-judge is shorthand for reflection + tournament;
+        // --agent-model role=id assigns any role (and overrides the shorthand).
+        var backends: [AgentRole: RoleBackend] = [:]
         if let remoteJudge {
-            let remoteDecoder = SchemaConstrainedDecoder(
-                model: RemoteLanguageModel(model: remoteJudge), metrics: decodeMetrics)
-            overrides[.reflection] = remoteDecoder
-            overrides[.tournament] = remoteDecoder
+            backends[.reflection] = .remote(remoteJudge)
+            backends[.tournament] = .remote(remoteJudge)
             print("Hybrid: reflection + tournament → remote \(remoteJudge); rest on-device.\n")
+        }
+        for spec in agentModels {
+            guard let (role, id) = Self.parseAgentModel(spec) else {
+                print("Ignoring --agent-model '\(spec)' (use role=modelId; see --list-models for roles).")
+                continue
+            }
+            backends[role] = .remote(id)
+            print("Backing \(role.rawValue) → remote \(id).")
+        }
+
+        let remoteRoot = URL(string: baseURL) ?? URL(string: "https://api.openai.com/v1")!
+        let makeRemote: (String) -> any SchemaConstrainedDecoding = { id in
+            SchemaConstrainedDecoder(
+                model: RemoteLanguageModel(model: id, baseURL: remoteRoot), metrics: decodeMetrics)
+        }
+        var overrides: [AgentRole: any SchemaConstrainedDecoding] = [:]
+        for (role, backend) in backends {
+            if case let .remote(id) = backend { overrides[role] = makeRemote(id) }
         }
         if tools {
             let registry = Self.researchRegistry()
