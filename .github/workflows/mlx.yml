@@ -20,7 +20,7 @@ on:
       - "Sources/AICoScientistMLX/**"
       - "Package.swift"
       - "Package.resolved"
-      - "ios/**"
+      - "Apps/**"
       - "project.yml"
       - ".github/workflows/mlx.yml"
   push:
