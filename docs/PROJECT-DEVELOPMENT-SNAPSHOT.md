@@ -8,29 +8,27 @@ Snapshot date: 2026-06-04
 
 ## State
 
-Hybrid routing + feature parity + public docs + agent grounding. The
-seven-agent pipeline runs on-device end-to-end
-(`swift run aicoscientist "<goal>" --run`), with optional
-`--remote-judge` hybrid routing and opt-in `--tools` grounding
-(arXiv/PubMed/web) for generation + reflection. Verified on macOS and
-on iPhone. M0–M6 landed; the CLI, routing, model catalog, demo apps,
-and DocC site shipped as feature PRs.
+Hybrid routing + feature parity + public docs + agent grounding +
+per-agent backing. The seven-agent pipeline runs on-device end-to-end
+(`swift run aicoscientist "<goal>" --run`), with opt-in `--tools`
+grounding (arXiv/PubMed/web) and per-role hosted backing
+(`--agent-model role=id`, or the app's Providers tab). Verified on macOS
+and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
-- **M6 — Agent tool-use loop + grounded Generation/Reflection** (PR #30).
-  `GroundedDecoder` ReAct loop + research tools wired via routing + CLI
-  `--tools`. See `docs/MILESTONE-6-CLOSEOUT.md`. 116 tests / 24 suites.
-- Earlier: M0–M5 numbered milestones; post-M5 feature work (routing,
-  remote adapter, catalog, apps, DocC, charts, settings, studies,
-  node-graph, agent tools — PRs #6–#29).
+- **M7 — Hosted per-agent model backing** (PR #31). Model discovery,
+  `RoleBackend`/`RoleDecoderRouter.backed`, CLI `--agent-model`, app
+  presets + per-agent pickers. See `docs/MILESTONE-7-CLOSEOUT.md`.
+  123 tests / 26 suites; macOS app builds.
+- **M6 — Agent tool-use loop** (PR #30). See `docs/MILESTONE-6-CLOSEOUT.md`.
+- Earlier: M0–M5 numbered milestones; post-M5 feature work (PRs #6–#29).
 
 ## Next in flight
 
-- **M7 — Hosted per-agent model backing** — `docs/MILESTONE-7-PLAN.md`
-  (Ready). Model discovery + per-role backend assignment; de-risks the
-  M6 tool-use loop. Drafts queued: M8 (Foundation Models), M9 (graph
-  inspector), M10 (optimization).
+- **M8 — Foundation Models backend** — `docs/MILESTONE-8-PLAN.md`
+  (Ready). Apple's native tool calling as an optional, availability-gated
+  backend. Drafts queued: M9 (graph inspector), M10 (optimization).
 
 ## Pointers
 

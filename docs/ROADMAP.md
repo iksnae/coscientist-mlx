@@ -19,8 +19,8 @@ M0–M5 shipped as numbered milestones (below). The work after M5 — the
 CLI, hybrid routing, model catalog, demo apps, and docs — shipped as
 feature PRs rather than numbered milestones. The milestone loop
 (`milestone-planner` → `milestone-grinder`) is now in use: **M6 (agent
-tool-use loop + grounded Generation/Reflection)** landed as the first
-loop milestone. The next numbered milestone is **M7**.
+tool-use loop)** and **M7 (hosted per-agent backing)** have landed. The
+next numbered milestone is **M8**.
 
 Agents can now ground hypothesis generation and reflection in real
 sources by calling research tools (arXiv, PubMed, web) through a
@@ -68,6 +68,10 @@ at planning time.
   (`GroundedDecoder`) + research tools (arXiv, PubMed, web) wired into
   Generation + Reflection via routing; CLI `--tools`. First loop
   milestone. See `docs/MILESTONE-6-CLOSEOUT.md`.
+- **M7 — Hosted per-agent model backing.** Model discovery
+  (`RemoteModels.list`) + `RoleBackend`/`RoleDecoderRouter.backed`; CLI
+  `--agent-model`/`--list-remote-models`; app presets + per-agent pickers.
+  See `docs/MILESTONE-7-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -89,12 +93,8 @@ roadmap for continuity:
 A batch of milestones is drafted and dependency-sequenced after M6
 (`milestone-planner`, 2026-06-04):
 
-- **M7 — Hosted per-agent model backing.** Model discovery
-  (`GET /models`) + per-role backend assignment; makes the M6 tool-use
-  loop reliable by routing tool-using roles to a capable hosted model.
-  *(in flight — `MILESTONE-7-PLAN.md`)*
 - **M8 — Foundation Models backend.** Apple's native tool calling as an
-  optional, availability-gated backend. *(draft)*
+  optional, availability-gated backend. *(in flight — `MILESTONE-8-PLAN.md`)*
 - **M9 — Graph selection + details inspector.** Click a node in the
   graph view to inspect its underlying data. *(draft)*
 - **M10 — Inference optimization.** Prompt/KV cache reuse + quant tiers.
