@@ -22,6 +22,8 @@ public actor CoScientistEngine {
     private var metrics = ExecutionMetrics()
     private var clusters: [SimilarityCluster] = []
     private var errors: [String] = []
+    private var iteration = 0
+    private var onProgress: (@Sendable (WorkflowProgress) -> Void)?
 
     /// - Parameter proximityAnalyzer: clustering strategy. Defaults to the LLM agent path;
     ///   pass an `EmbeddingProximityAnalyzer` for the embedding-based (preferred) path.
@@ -65,10 +67,16 @@ public actor CoScientistEngine {
     }
 
     /// Run the full workflow for a research goal. Always returns a result.
-    public func run(researchGoal goal: String) async -> WorkflowResult {
+    /// - Parameter onProgress: optional live callback invoked after each phase with a
+    ///   snapshot of the current pool + metrics (for UIs that show the workflow unfolding).
+    public func run(
+        researchGoal goal: String,
+        onProgress: (@Sendable (WorkflowProgress) -> Void)? = nil
+    ) async -> WorkflowResult {
         let clock = ContinuousClock()
         let start = clock.now
         reset()
+        self.onProgress = onProgress
 
         await timed("generation") { await self.generationPhase(goal: goal) }
         await timed("reflection") { await self.reflectionPhase(goal: goal) }
@@ -77,6 +85,7 @@ public actor CoScientistEngine {
 
         var metaSummary = ""
         for _ in 0..<max(0, config.maxIterations) {
+            iteration += 1
             var meta: MetaReview?
             await timed("metaReview") { meta = await self.metaReviewPhase() }
             if let meta { metaSummary = meta.metaReviewSummary }
@@ -232,6 +241,8 @@ public actor CoScientistEngine {
         metrics = ExecutionMetrics()
         clusters = []
         errors = []
+        iteration = 0
+        onProgress = nil
     }
 
     private func pickTwoDistinct(in count: Int) -> (Int, Int) {
@@ -248,6 +259,17 @@ public actor CoScientistEngine {
         let start = clock.now
         await body()
         metrics.agentExecutionTimes[name, default: 0] += seconds(since: start, clock: clock)
+        emitProgress(name)
+    }
+
+    private func emitProgress(_ phase: String) {
+        guard let onProgress else { return }
+        onProgress(
+            WorkflowProgress(
+                phase: phase,
+                iteration: iteration,
+                hypotheses: hypotheses.sorted { $0.eloRating > $1.eloRating },
+                metrics: metrics))
     }
 
     private func seconds(since start: ContinuousClock.Instant, clock: ContinuousClock) -> TimeInterval {

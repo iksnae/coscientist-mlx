@@ -1,5 +1,15 @@
+import Foundation
 import Testing
 @testable import AICoScientistKit
+
+/// Thread-safe sink for progress events (the engine invokes the handler serially, but this
+/// keeps Sendability honest).
+private final class ProgressCollector: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: [WorkflowProgress] = []
+    func add(_ event: WorkflowProgress) { lock.lock(); stored.append(event); lock.unlock() }
+    var events: [WorkflowProgress] { lock.lock(); defer { lock.unlock() }; return stored }
+}
 
 /// A mock model that answers each agent according to its system prompt, enabling a full,
 /// deterministic engine run with no MLX and no downloads.
@@ -144,6 +154,19 @@ struct EngineTests {
         #expect(await tournamentCounter.count == 6)
         // gen 1 + reflection 2 + meta 1 + evolution 1 + reflection 1 + proximity 1 = 7.
         #expect(await defaultCounter.count == 7)
+    }
+
+    @Test("Emits live progress after each phase")
+    func progressEvents() async {
+        let collector = ProgressCollector()
+        _ = await smallEngine(model: ScriptedModel()).run(researchGoal: "g") { collector.add($0) }
+
+        let phases = collector.events.map(\.phase)
+        #expect(phases.first == "generation")
+        #expect(phases.contains("tournament"))
+        #expect(phases.contains("proximity"))
+        #expect(collector.events.first { $0.phase == "generation" }?.hypotheses.count == 2)
+        #expect(collector.events.contains { $0.iteration == 1 })   // refinement round reported
     }
 
     @Test("Records per-phase timing for every phase")
