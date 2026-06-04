@@ -1,0 +1,17 @@
+# Swift / SwiftPM
+.build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+
+# macOS
+.DS_Store
+
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
+# Models / large local artifacts (downloaded at runtime, never committed)
+Models/
+*.safetensors
+*.gguf
