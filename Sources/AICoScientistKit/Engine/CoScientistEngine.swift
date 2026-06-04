@@ -11,7 +11,7 @@ import Foundation
 /// mock in tests, unchanged. Like the reference, it never throws: per-phase failures are
 /// recorded in `WorkflowResult.errors` and the workflow continues.
 public actor CoScientistEngine {
-    private let decoder: any SchemaConstrainedDecoding
+    private let router: any DecoderRouting
     private let proximityAnalyzer: any ProximityAnalyzer
     private let config: EngineConfiguration
     private let decodeMetrics: DecodeMetrics?
@@ -25,8 +25,27 @@ public actor CoScientistEngine {
 
     /// - Parameter proximityAnalyzer: clustering strategy. Defaults to the LLM agent path;
     ///   pass an `EmbeddingProximityAnalyzer` for the embedding-based (preferred) path.
-    /// - Parameter decodeMetrics: pass the same `DecodeMetrics` you gave the decoder to fold
+    /// Designated initializer: route each agent role to a (possibly different) decoder.
+    /// - Parameter decodeMetrics: pass the same `DecodeMetrics` you gave the decoders to fold
     ///   repair/failure telemetry into the result.
+    public init(
+        router: any DecoderRouting,
+        config: EngineConfiguration = .init(),
+        seed: UInt64? = nil,
+        proximityAnalyzer: (any ProximityAnalyzer)? = nil,
+        decodeMetrics: DecodeMetrics? = nil,
+        transcript: Transcript? = nil
+    ) {
+        self.router = router
+        self.proximityAnalyzer =
+            proximityAnalyzer ?? AgentProximityAnalyzer(decoder: router.decoder(for: .proximity))
+        self.config = config
+        self.decodeMetrics = decodeMetrics
+        self.transcript = transcript
+        self.rng = SeededGenerator(seed: seed ?? UInt64.random(in: .min ... .max))
+    }
+
+    /// Convenience: use one decoder for every role (backward compatible).
     public init(
         decoder: any SchemaConstrainedDecoding,
         config: EngineConfiguration = .init(),
@@ -35,12 +54,14 @@ public actor CoScientistEngine {
         decodeMetrics: DecodeMetrics? = nil,
         transcript: Transcript? = nil
     ) {
-        self.decoder = decoder
-        self.proximityAnalyzer = proximityAnalyzer ?? AgentProximityAnalyzer(decoder: decoder)
-        self.config = config
-        self.decodeMetrics = decodeMetrics
-        self.transcript = transcript
-        self.rng = SeededGenerator(seed: seed ?? UInt64.random(in: .min ... .max))
+        self.init(
+            router: StaticDecoderRouter(decoder),
+            config: config,
+            seed: seed,
+            proximityAnalyzer: proximityAnalyzer,
+            decodeMetrics: decodeMetrics,
+            transcript: transcript
+        )
     }
 
     /// Run the full workflow for a research goal. Always returns a result.
@@ -90,7 +111,8 @@ public actor CoScientistEngine {
     private func generationPhase(goal: String) async {
         do {
             let out = try await GenerationAgent().run(
-                .init(researchGoal: goal, count: config.hypothesesPerGeneration), using: decoder)
+                .init(researchGoal: goal, count: config.hypothesesPerGeneration),
+                using: router.decoder(for: .generation))
             hypotheses = out.hypotheses.map { Hypothesis(text: $0.text) }
             metrics.hypothesisCount = hypotheses.count
         } catch {
@@ -103,7 +125,8 @@ public actor CoScientistEngine {
         for i in hypotheses.indices {
             do {
                 let review = try await agent.run(
-                    .init(researchGoal: goal, hypothesisText: hypotheses[i].text), using: decoder)
+                    .init(researchGoal: goal, hypothesisText: hypotheses[i].text),
+                    using: router.decoder(for: .reflection))
                 hypotheses[i].reviews.append(review)
                 hypotheses[i].score = review.scores.overall
                 metrics.reviewsCount += 1
@@ -131,7 +154,7 @@ public actor CoScientistEngine {
                     .init(researchGoal: goal,
                           hypothesisA: hypotheses[i].text,
                           hypothesisB: hypotheses[j].text),
-                    using: decoder)
+                    using: router.decoder(for: .tournament))
                 let aWon = verdict.winner == .a
                 let oldI = hypotheses[i].eloRating
                 let oldJ = hypotheses[j].eloRating
@@ -150,7 +173,8 @@ public actor CoScientistEngine {
             .compactMap { h in h.reviews.last.map { "- \(h.text): \($0.reviewSummary)" } }
             .joined(separator: "\n")
         do {
-            return try await MetaReviewAgent().run(.init(reviewsDigest: digest), using: decoder)
+            return try await MetaReviewAgent().run(
+                .init(reviewsDigest: digest), using: router.decoder(for: .metaReview))
         } catch {
             errors.append("meta-review: \(error)")
             return nil
@@ -171,7 +195,7 @@ public actor CoScientistEngine {
                     .init(originalText: h.text,
                           reviewFeedback: feedback,
                           metaReviewInsights: meta?.metaReviewSummary ?? ""),
-                    using: decoder)
+                    using: router.decoder(for: .evolution))
                 var refined = Hypothesis(text: out.refinedText)
                 refined.evolutionHistory = h.evolutionHistory + [h.text]
                 evolved.append(refined)
