@@ -77,6 +77,28 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
         ])
         return lines.joined(separator: "\n") + "\n"
     }
+
+    /// CSV of the ranked hypotheses (rank, elo, score, win rate, cluster, text) for spreadsheets.
+    public func csv() -> String {
+        var rows = ["rank,elo,score,winRate,cluster,text"]
+        for (index, h) in hypotheses.enumerated() {
+            let cells = [
+                String(index + 1),
+                String(h.eloRating),
+                String(format: "%.4f", h.score),
+                String(format: "%.1f", h.winRate),
+                h.similarityClusterID ?? "",
+                h.text,
+            ]
+            rows.append(cells.map(Self.csvEscape).joined(separator: ","))
+        }
+        return rows.joined(separator: "\n") + "\n"
+    }
+
+    static func csvEscape(_ field: String) -> String {
+        guard field.contains(where: { $0 == "," || $0 == "\"" || $0 == "\n" }) else { return field }
+        return "\"" + field.replacingOccurrences(of: "\"", with: "\"\"") + "\""
+    }
 }
 
 /// Reads/writes `RunSnapshot`s as pretty, stable JSON. Replaces the reference's per-agent

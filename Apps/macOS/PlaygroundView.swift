@@ -53,6 +53,7 @@ struct PlaygroundView: View {
                 Menu("Export") {
                     Button("JSON…") { exportJSON() }
                     Button("Markdown…") { exportMarkdown() }
+                    Button("CSV…") { exportCSV() }
                 }
                 .disabled(!runner.canExport).fixedSize()
             }
@@ -170,6 +171,13 @@ struct PlaygroundView: View {
         guard let snapshot = runner.makeSnapshot() else { return }
         save(suggestedName: "coscientist-run.md") { url in
             try snapshot.markdown().write(to: url, atomically: true, encoding: .utf8)
+        }
+    }
+
+    private func exportCSV() {
+        guard let snapshot = runner.makeSnapshot() else { return }
+        save(suggestedName: "coscientist-run.csv") { url in
+            try snapshot.csv().write(to: url, atomically: true, encoding: .utf8)
         }
     }
 

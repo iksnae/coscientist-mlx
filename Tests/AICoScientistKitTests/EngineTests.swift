@@ -178,6 +178,20 @@ struct EngineTests {
         #expect(matches.contains { $0.detail.contains("wins") })
     }
 
+    @Test("Resume continues refinement from a snapshot (no generation)")
+    func resume() async {
+        let first = await smallEngine(model: ScriptedModel()).run(researchGoal: "g")
+        let snapshot = RunSnapshot(researchGoal: "g", result: first)
+
+        let resumed = await smallEngine(model: ScriptedModel())
+            .resume(from: snapshot, additionalIterations: 1)
+
+        #expect(resumed.errors.isEmpty)
+        #expect(!resumed.topRankedHypotheses.isEmpty)
+        // Carried the prior evolutions forward and ran at least one more.
+        #expect(resumed.metrics.evolutionsCount >= first.metrics.evolutionsCount + 1)
+    }
+
     @Test("Cancellation stops the run and is recorded; result is still returned")
     func cancellation() async {
         let engine = smallEngine(model: ScriptedModel())

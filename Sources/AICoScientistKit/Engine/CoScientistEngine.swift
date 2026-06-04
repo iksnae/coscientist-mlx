@@ -78,14 +78,46 @@ public actor CoScientistEngine {
         reset()
         self.onProgress = onProgress
 
-        var metaSummary = ""
         if !Task.isCancelled { await timed("generation") { await self.generationPhase(goal: goal) } }
         if !Task.isCancelled { await timed("reflection") { await self.reflectionPhase(goal: goal) } }
         if !Task.isCancelled { await timed("ranking") { self.rankingPhase() } }
         if !Task.isCancelled { await timed("tournament") { await self.tournamentPhase(goal: goal) } }
 
+        let metaSummary = await refinementLoop(
+            goal: goal, iterations: config.maxIterations, metaSummary: "")
+        return await finish(start: start, clock: clock, metaSummary: metaSummary)
+    }
+
+    /// Resume refinement from a saved snapshot: seed the pool/metrics and run more iterations
+    /// (meta-review → evolution → reflection → ranking → tournament → proximity), skipping the
+    /// initial generation. Lets a saved run be continued.
+    public func resume(
+        from snapshot: RunSnapshot,
+        additionalIterations: Int? = nil,
+        onProgress: (@Sendable (WorkflowProgress) -> Void)? = nil
+    ) async -> WorkflowResult {
+        let clock = ContinuousClock()
+        let start = clock.now
+        reset()
+        self.onProgress = onProgress
+        hypotheses = snapshot.hypotheses
+        metrics = snapshot.metrics
+        clusters = snapshot.clusters
+
+        let metaSummary = await refinementLoop(
+            goal: snapshot.researchGoal,
+            iterations: additionalIterations ?? config.maxIterations,
+            metaSummary: snapshot.metaReviewSummary)
+        return await finish(start: start, clock: clock, metaSummary: metaSummary)
+    }
+
+    /// The shared refinement loop used by both `run` and `resume`.
+    private func refinementLoop(
+        goal: String, iterations: Int, metaSummary initial: String
+    ) async -> String {
+        var metaSummary = initial
         var iter = 0
-        while iter < max(0, config.maxIterations), !Task.isCancelled {
+        while iter < max(0, iterations), !Task.isCancelled {
             iter += 1
             iteration = iter
             var meta: MetaReview?
@@ -99,8 +131,7 @@ public actor CoScientistEngine {
             await timed("tournament") { await self.tournamentPhase(goal: goal) }
             await timed("proximity") { await self.proximityPhase() }
         }
-
-        return await finish(start: start, clock: clock, metaSummary: metaSummary)
+        return metaSummary
     }
 
     /// Build the final result (also used on cancellation, with whatever's been computed).

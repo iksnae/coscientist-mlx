@@ -58,6 +58,21 @@ struct RunStoreTests {
         #expect(md.contains("reviews: 2"))
     }
 
+    @Test("CSV export has a header and the hypothesis rows")
+    func csvExport() {
+        let csv = sampleSnapshot().csv()
+        #expect(csv.hasPrefix("rank,elo,score,winRate,cluster,text"))
+        #expect(csv.contains("1275"))                  // elo
+        #expect(csv.contains("persisted hypothesis"))  // text
+    }
+
+    @Test("CSV escapes commas and quotes")
+    func csvEscaping() {
+        #expect(RunSnapshot.csvEscape("plain") == "plain")
+        #expect(RunSnapshot.csvEscape("a,b") == "\"a,b\"")
+        #expect(RunSnapshot.csvEscape("he said \"hi\"") == "\"he said \"\"hi\"\"\"")
+    }
+
     @Test("Load throws on a missing file")
     func missingFile() {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("does-not-exist-\(UUID()).json")

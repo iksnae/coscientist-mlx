@@ -39,13 +39,16 @@ struct AICoScientistCommand: AsyncParsableCommand {
     @Flag(help: "List the curated model catalog and exit.")
     var listModels = false
 
+    @Option(help: "Resume a saved run (JSON path): continue refinement, skipping generation.")
+    var resumePath: String?
+
     mutating func run() async throws {
         if listModels {
             Self.printCatalog()
             return
         }
-        guard !goal.isEmpty else {
-            print("Provide a research goal (or --list-models). See --help.")
+        guard !goal.isEmpty || resumePath != nil else {
+            print("Provide a research goal (or --list-models, or --resume <path>). See --help.")
             return
         }
         print("coscientist-mlx \(BuildInfo.version)")
@@ -109,8 +112,15 @@ struct AICoScientistCommand: AsyncParsableCommand {
             decodeMetrics: decodeMetrics
         )
 
-        print("Running workflow…\n")
-        let result = await engine.run(researchGoal: goal)
+        let result: WorkflowResult
+        if let resumePath {
+            let snapshot = try RunStore.load(from: URL(fileURLWithPath: resumePath))
+            print("Resuming from \(resumePath) (\(snapshot.hypotheses.count) hypotheses)…\n")
+            result = await engine.resume(from: snapshot, additionalIterations: iterations)
+        } else {
+            print("Running workflow…\n")
+            result = await engine.run(researchGoal: goal)
+        }
 
         print("--- Top hypotheses (by Elo) ---")
         for (rank, h) in result.topRankedHypotheses.enumerated() {
@@ -135,7 +145,12 @@ struct AICoScientistCommand: AsyncParsableCommand {
 
         if let save {
             let url = URL(fileURLWithPath: save)
-            try RunStore.save(RunSnapshot(researchGoal: goal, result: result), to: url)
+            let snapshot = RunSnapshot(researchGoal: goal, result: result)
+            switch url.pathExtension.lowercased() {
+            case "md": try snapshot.markdown().write(to: url, atomically: true, encoding: .utf8)
+            case "csv": try snapshot.csv().write(to: url, atomically: true, encoding: .utf8)
+            default: try RunStore.save(snapshot, to: url)
+            }
             print("\nSaved run to \(url.path)")
         }
     }
