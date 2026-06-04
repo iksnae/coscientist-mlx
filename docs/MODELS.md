@@ -38,9 +38,9 @@
 |---|---|---|---|---|
 | **Small** | 16 GB | Qwen3-4B Instruct | `mlx-community/Qwen3-4B-Instruct-2507-4bit` | Beats the 7B default at ~half size; instruct = no `<think>` to strip → cleanest JSON for judge/scorer roles |
 | Small (fan-out) | 16 GB | Qwen3-1.7B | `mlx-community/Qwen3-1.7B-4bit-DWQ` | Cheap judge for the 3·N tournament fan-out |
-| **Mid** | 32 GB | Qwen3-8B | ⚠️ `mlx-community/Qwen3-8B-4bit-DWQ` | Hybrid reasoning on the plain LLM path; safest 32 GB pick |
-| Mid (ceiling) | 32 GB | Qwen3-14B | ⚠️ `mlx-community/Qwen3-14B-4bit-DWQ` | ~9 GB @ 4-bit; stronger generation if RAM allows |
-| **Large** ⭐ | 64 GB+ | Qwen3.6-35B-A3B (MoE) | `mlx-community/Qwen3.6-35B-A3B-4bit-DWQ` | Standout: 35B-class quality at **3B active** → fast; hybrid thinking; 262K ctx; Apache-2.0; text-only confirmed |
+| **Mid** | 32 GB | Qwen3-8B | `mlx-community/Qwen3-8B-4bit-DWQ` | ✅ 4.6 GB; hybrid reasoning on the plain LLM path; safest 32 GB pick |
+| Mid (ceiling) | 32 GB | Qwen3-14B | `mlx-community/Qwen3-14B-4bit-DWQ-053125` | ✅ 8.3 GB @ 4-bit (DWQ build carries the `-053125` date suffix; plain `Qwen3-14B-4bit` also exists). Stronger generation if RAM allows |
+| **Large** ⭐ | 64 GB+ | Qwen3.6-35B-A3B (MoE) | `mlx-community/Qwen3.6-35B-A3B-4bit-DWQ` | Standout: 35B-class quality at **3B active** → fast; hybrid thinking; 262K ctx; Apache-2.0; text-only. ⚠️ **Repo is 8-bit, ~20.7 GB despite the "4bit" name** (config `bits=8`) — find a true 4-bit variant if RAM-constrained |
 | Large (alt quant) | 64 GB+ | Qwen3.6-35B-A3B | `unsloth/Qwen3.6-35B-A3B-UD-MLX-4bit` · `mlx-community/Qwen3.6-35B-A3B-OptiQ-4bit` | Dynamic / sensitivity-aware quants — A/B for judge accuracy |
 | Large (long-doc) | 64 GB+ | Llama-4-Scout (MoE) | `mlx-community/Llama-4-Scout-17B-16E-Instruct-4bit` | Up to 10M ctx for long-doc review; weaker reasoning, heavier RAM than Qwen3.6-MoE |
 
@@ -76,7 +76,7 @@ The **MLX-Swift embedding registry supports only 3 architectures** (`bert`,
 | **Default (keep)** | `mlx-community/Qwen3-Embedding-0.6B-4bit-DWQ` | 1024 (MRL 32–1024) | 32K | Eng v2 ~70.7 | ✅ `qwen3` |
 | Fast/small toggle | `BAAI/bge-small-en-v1.5` | 384 | 512 | ~62 | ✅ `bert` |
 | Long hypotheses | `nomic-ai/nomic-embed-text-v1.5` | 768 (MRL→64) | 8192 | ~62–63 | ✅ `nomic_bert` |
-| Upgrade ceiling | ⚠️ `mlx-community/Qwen3-Embedding-4B-4bit-DWQ` | 2560 | 32K | Eng v2 ~74.6 | ✅ `qwen3` (confirm repo) |
+| Upgrade ceiling | `mlx-community/Qwen3-Embedding-4B-4bit-DWQ` | 2560 | 32K | Eng v2 ~74.6 | ✅ `qwen3` (~2.3 GB, confirmed) |
 
 - **Verdict: keep `Qwen3-Embedding-0.6B-4bit-DWQ`.** It's the only registry model in the
   top MTEB tier while staying tiny; 32K ctx + MRL (truncate to 256/512 dims for faster
@@ -114,11 +114,18 @@ critical judge/scorer roles, prefer **Qwen3 instruct (non-thinking)** so there i
 
 ## 5. Verification queue (before pinning in code)
 
-- [ ] Confirm exact repo ids: `Qwen3-8B-4bit-DWQ`, `Qwen3-14B-4bit-DWQ`,
-  `Qwen3-Embedding-4B-4bit-DWQ` (date-stamped DWQ suffixes exist, e.g. `-053125`).
-- [ ] Confirm `Qwen3.6-35B-A3B-4bit-DWQ` disk size (~20.7 GB reported) against target RAM
-  headroom with embedder + KV cache resident.
-- [ ] Re-check `mlx-swift-structured` version/commit against the repo before building M2 on it.
+Verified against the HF API, June 2026 (an `mlx-community` 404 returns HTTP 401, not 404):
+
+- [x] `Qwen3-8B-4bit-DWQ` ✅ exists (4.6 GB) · `Qwen3-Embedding-4B-4bit-DWQ` ✅ (2.3 GB).
+- [x] `Qwen3-14B-4bit-DWQ` ❌ **does not exist** → use `Qwen3-14B-4bit-DWQ-053125` (8.3 GB)
+  or the plain `Qwen3-14B-4bit`.
+- [x] `Qwen3.6-35B-A3B-4bit-DWQ` ✅ exists, ~20.7 GB, but is **8-bit** (`bits=8`,
+  `qwen3_5_moe`) despite the "4bit" name — needs 64 GB+; seek a true 4-bit variant if tighter.
+- [x] In-use defaults confirmed: `Qwen3-4B-Instruct-2507-4bit` (2.27 GB) and
+  `Qwen3-Embedding-0.6B-4bit-DWQ` (0.35 GB).
+- [ ] Re-check `mlx-swift-structured` version/commit before building constrained decoding on
+  it. (M2 shipped schema-guided + repair, which passed a real run with zero JSON errors;
+  logit-masking remains deferred.)
 
 ## Sources
 
