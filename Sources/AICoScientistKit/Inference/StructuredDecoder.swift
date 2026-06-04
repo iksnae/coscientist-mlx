@@ -15,10 +15,12 @@ public protocol StructuredDecoder: Sendable {
 public struct LanguageModelStructuredDecoder: StructuredDecoder {
     private let model: LanguageModel
     private let maxRepairAttempts: Int
+    private let metrics: DecodeMetrics?
 
-    public init(model: LanguageModel, maxRepairAttempts: Int = 1) {
+    public init(model: LanguageModel, maxRepairAttempts: Int = 1, metrics: DecodeMetrics? = nil) {
         self.model = model
         self.maxRepairAttempts = max(0, maxRepairAttempts)
+        self.metrics = metrics
     }
 
     public func decode<T: Decodable & Sendable>(
@@ -26,24 +28,27 @@ public struct LanguageModelStructuredDecoder: StructuredDecoder {
     ) async throws -> T {
         var prompt = user
         var lastError = "no attempts made"
+        var repairsUsed = 0
 
-        for _ in 0...maxRepairAttempts {
+        for attempt in 0...maxRepairAttempts {
             let raw = try await model.generateText(system: system, user: prompt, config: config)
 
-            guard let json = JSONExtraction.extractObject(from: raw) else {
-                lastError = "no JSON object found in model output"
-                prompt = Self.repairPrompt(original: user, error: lastError)
-                continue
+            if let json = JSONExtraction.extractObject(from: raw),
+               let value = try? JSONDecoder().decode(T.self, from: Data(json.utf8)) {
+                await metrics?.recordSuccess(repairs: repairsUsed)
+                return value
             }
+            lastError = JSONExtraction.extractObject(from: raw) == nil
+                ? "no JSON object found in model output"
+                : "JSON did not match \(T.self)"
 
-            do {
-                return try JSONDecoder().decode(T.self, from: Data(json.utf8))
-            } catch {
-                lastError = String(describing: error)
+            if attempt < maxRepairAttempts {
+                repairsUsed += 1
                 prompt = Self.repairPrompt(original: user, error: lastError)
             }
         }
 
+        await metrics?.recordFailure(repairs: repairsUsed)
         throw AgentError.decodingFailed(lastError)
     }
 

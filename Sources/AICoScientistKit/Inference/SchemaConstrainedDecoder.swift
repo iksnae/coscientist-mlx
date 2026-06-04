@@ -18,10 +18,12 @@ public protocol SchemaConstrainedDecoding: Sendable {
 public struct SchemaConstrainedDecoder: SchemaConstrainedDecoding {
     private let model: LanguageModel
     private let maxRepairAttempts: Int
+    private let metrics: DecodeMetrics?
 
-    public init(model: LanguageModel, maxRepairAttempts: Int = 1) {
+    public init(model: LanguageModel, maxRepairAttempts: Int = 1, metrics: DecodeMetrics? = nil) {
         self.model = model
         self.maxRepairAttempts = max(0, maxRepairAttempts)
+        self.metrics = metrics
     }
 
     public func decode<T>(
@@ -30,36 +32,47 @@ public struct SchemaConstrainedDecoder: SchemaConstrainedDecoding {
         let schema = T.jsonSchema
         var prompt = Self.augment(user, schema: schema)
         var lastError = "no attempts made"
+        var repairsUsed = 0
 
-        for _ in 0...maxRepairAttempts {
+        for attempt in 0...maxRepairAttempts {
             let raw = try await model.generateText(system: system, user: prompt, config: config)
 
-            guard let json = JSONExtraction.extractObject(from: raw) else {
-                lastError = "no JSON object found in model output"
-                prompt = Self.repair(user, schema: schema, error: lastError)
-                continue
+            if let value = decodeIfValid(raw, schema: schema, as: T.self, error: &lastError) {
+                await metrics?.recordSuccess(repairs: repairsUsed)
+                return value
             }
 
-            // Validate the parsed value against the schema before decoding so we can give
-            // the model a precise, actionable error on retry.
-            if let value = try? JSONValue.parse(json) {
-                let violations = schema.validate(value)
-                if !violations.isEmpty {
-                    lastError = violations.joined(separator: "; ")
-                    prompt = Self.repair(user, schema: schema, error: lastError)
-                    continue
-                }
-            }
-
-            do {
-                return try JSONDecoder().decode(T.self, from: Data(json.utf8))
-            } catch {
-                lastError = String(describing: error)
+            if attempt < maxRepairAttempts {
+                repairsUsed += 1
                 prompt = Self.repair(user, schema: schema, error: lastError)
             }
         }
 
+        await metrics?.recordFailure(repairs: repairsUsed)
         throw AgentError.decodingFailed(lastError)
+    }
+
+    /// Extract → schema-validate → decode. Returns the value, or nil with `error` set.
+    private func decodeIfValid<T: Decodable>(
+        _ raw: String, schema: JSONSchema, as type: T.Type, error: inout String
+    ) -> T? {
+        guard let json = JSONExtraction.extractObject(from: raw) else {
+            error = "no JSON object found in model output"
+            return nil
+        }
+        if let value = try? JSONValue.parse(json) {
+            let violations = schema.validate(value)
+            if !violations.isEmpty {
+                error = violations.joined(separator: "; ")
+                return nil
+            }
+        }
+        do {
+            return try JSONDecoder().decode(T.self, from: Data(json.utf8))
+        } catch let decodeError {
+            error = String(describing: decodeError)
+            return nil
+        }
     }
 
     private static func augment(_ user: String, schema: JSONSchema) -> String {

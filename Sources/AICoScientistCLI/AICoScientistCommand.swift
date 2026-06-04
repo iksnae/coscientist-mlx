@@ -56,10 +56,12 @@ struct AICoScientistCommand: AsyncParsableCommand {
         print("Loading local models (first run downloads from Hugging Face)…")
         let model = try await MLXLanguageModel.load()
         let embedder = try await MLXEmbeddingModel.load()
+        let decodeMetrics = DecodeMetrics()
         let engine = CoScientistEngine(
-            decoder: SchemaConstrainedDecoder(model: model),
+            decoder: SchemaConstrainedDecoder(model: model, metrics: decodeMetrics),
             config: .init(maxIterations: iterations, hypothesesPerGeneration: count),
-            proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder)
+            proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder),
+            decodeMetrics: decodeMetrics
         )
 
         print("Running workflow…\n")
@@ -71,7 +73,8 @@ struct AICoScientistCommand: AsyncParsableCommand {
         }
         print("\n--- Metrics ---")
         print("hypotheses=\(result.metrics.hypothesisCount) reviews=\(result.metrics.reviewsCount) "
-            + "matches=\(result.metrics.tournamentsCount) evolutions=\(result.metrics.evolutionsCount)")
+            + "matches=\(result.metrics.tournamentsCount) evolutions=\(result.metrics.evolutionsCount) "
+            + "repairs=\(result.metrics.repairAttempts) decodeFailures=\(result.metrics.decodeFailures)")
         print(String(format: "time=%.1fs", result.totalWorkflowTime))
         if !result.errors.isEmpty {
             print("\n--- Errors (\(result.errors.count)) ---")

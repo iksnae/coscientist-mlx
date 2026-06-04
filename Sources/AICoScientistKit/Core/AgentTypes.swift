@@ -111,6 +111,10 @@ public struct ExecutionMetrics: Codable, Sendable, Equatable {
     public var reviewsCount: Int
     public var tournamentsCount: Int
     public var evolutionsCount: Int
+    /// Total repair retries across all structured decodes (how often models needed a 2nd try).
+    public var repairAttempts: Int
+    /// Decodes that never produced a valid value after all retries.
+    public var decodeFailures: Int
     public var agentExecutionTimes: [String: TimeInterval]
 
     public init(
@@ -118,12 +122,16 @@ public struct ExecutionMetrics: Codable, Sendable, Equatable {
         reviewsCount: Int = 0,
         tournamentsCount: Int = 0,
         evolutionsCount: Int = 0,
+        repairAttempts: Int = 0,
+        decodeFailures: Int = 0,
         agentExecutionTimes: [String: TimeInterval] = [:]
     ) {
         self.hypothesisCount = hypothesisCount
         self.reviewsCount = reviewsCount
         self.tournamentsCount = tournamentsCount
         self.evolutionsCount = evolutionsCount
+        self.repairAttempts = repairAttempts
+        self.decodeFailures = decodeFailures
         self.agentExecutionTimes = agentExecutionTimes
     }
 }
