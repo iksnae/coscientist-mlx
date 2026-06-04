@@ -1,4 +1,5 @@
 import AICoScientistKit
+import AICoScientistMLX
 import ArgumentParser
 
 @main
@@ -11,9 +12,26 @@ struct AICoScientistCommand: AsyncParsableCommand {
     @Argument(help: "The research goal to explore.")
     var goal: String
 
+    @Flag(help: "Load the local MLX model and generate a single sample (downloads ~4.5 GB on first run).")
+    var probe = false
+
     mutating func run() async throws {
         print("coscientist-mlx \(BuildInfo.version)")
         print("Research goal: \(goal)")
-        print("M0 foundation only — inference (M1) and the engine (M4) are not yet wired.")
+
+        guard probe else {
+            print("M1 inference is wired. Re-run with --probe to load the model and generate.")
+            print("(The full agent engine lands in M4.)")
+            return
+        }
+
+        print("Loading local model (first run downloads from Hugging Face)…")
+        let model = try await MLXLanguageModel.load()
+        let reply = try await model.generateText(
+            system: "You are a terse scientific assistant. Propose one concise, testable hypothesis.",
+            user: goal,
+            config: .deterministic
+        )
+        print("\n--- model output ---\n\(reply)")
     }
 }
