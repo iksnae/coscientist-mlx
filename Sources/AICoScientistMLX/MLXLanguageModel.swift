@@ -34,6 +34,11 @@ public actor MLXLanguageModel: AICoScientistKit.LanguageModel {
         return MLXLanguageModel(container: container)
     }
 
+    /// Convenience: load by Hugging Face repo id, so callers need not import MLX types.
+    public static func load(modelId: String) async throws -> MLXLanguageModel {
+        try await load(ModelConfiguration(id: modelId))
+    }
+
     public func generateText(
         system: String, user: String, config: GenerationConfig
     ) async throws -> String {

@@ -8,7 +8,7 @@ import PackageDescription
 // This keeps the core testable and swappable (DIP) and isolates MLX's churn/build cost.
 let package = Package(
     name: "coscientist-mlx",
-    platforms: [.macOS(.v14)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "AICoScientistKit", targets: ["AICoScientistKit"]),
         .library(name: "AICoScientistMLX", targets: ["AICoScientistMLX"]),
