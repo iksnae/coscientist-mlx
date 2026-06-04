@@ -10,7 +10,7 @@ Hosted per-agent model backing
 
 ## Status
 
-In progress
+Complete
 
 ## Duration And Usage Tracking
 
@@ -18,8 +18,8 @@ In progress
 | --- | --- |
 | Planned start | 2026-06-04 |
 | Actual start | 2026-06-04 |
-| Actual end | TBD |
-| Elapsed | TBD |
+| Actual end | 2026-06-04 |
+| Elapsed | same day |
 | Scope class | Small |
 | Confidence | High |
 
@@ -27,21 +27,22 @@ In progress
 
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
-| `listModels` parses a canned `/models` response into an id list and throws on non-2xx. | Pending | Track A |
-| `RoleBackend` maps each role to a local-or-remote choice; builder routes assigned roles to their backend, others to default. | Pending | Track B |
-| `--list-remote-models` prints the discovered list; `--agent-model role=id` assigns per role; no flags ⇒ today's behavior. | Pending | Track C |
-| App Providers tab lists hosted models, offers presets + per-agent picker; assignments persist; API key in Keychain. | Pending | Track C |
-| Remote disabled ⇒ every role resolves to a local decoder (local-first). | Pending | Track B/C |
-| New behaviour is driven by a test written first (mock backend, no GPU). | Pending | all tracks |
-| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Pending | `git grep` check |
+| `listModels` parses a canned `/models` response into an id list and throws on non-2xx. | Done | `RemoteModelDiscoveryTests` (a574a62) |
+| `RoleBackend` maps each role to a local-or-remote choice; builder routes assigned roles to their backend, others to default. | Done | `RoleBackendTests` (3e80b8d) |
+| `--list-remote-models` prints the discovered list; `--agent-model role=id` assigns per role; no flags ⇒ today's behavior. | Done | CLI flags (02303e7); `--help` verified. |
+| App Providers tab lists hosted models, offers presets + per-agent picker; assignments persist; API key in Keychain. | Done | `SettingsStore`/`SettingsView` (77bb13c); macOS BUILD SUCCEEDED. |
+| Remote disabled ⇒ every role resolves to a local decoder (local-first). | Done | `RoleBackendTests.emptyIsAllBase`; `SettingsStore.roleBackends` guards on `remoteReady`. |
+| New behaviour is driven by a test written first (mock backend, no GPU). | Done | `RemoteModelDiscoveryTests`, `RoleBackendTests` written before impl. |
+| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Done | `git grep "import MLX" -- '*.swift'` → only adapter + `Package.swift`. |
 
 ## Validation Log
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `swift build` | Pending | — |
-| `swift test` | Pending | — |
-| `git diff --check` | Pending | — |
+| `swift build` | Passed | Clean on Apple Silicon. |
+| `swift test` | Passed | 123 tests / 26 suites green (+7 vs M6's 116/24). |
+| macOS app build | Passed | `xcodebuild … CoScientistDemo` BUILD SUCCEEDED. |
+| `git diff --check` | Passed | Whitespace clean. |
 
 ## Decisions
 
