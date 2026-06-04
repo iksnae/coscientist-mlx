@@ -11,7 +11,7 @@ jobs:
     name: Build & test (macOS, Swift 6)
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Swift version
         run: swift --version   # macos-15 default toolchain is Swift 6.x
       - name: Build
