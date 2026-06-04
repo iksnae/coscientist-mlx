@@ -5,11 +5,23 @@ Remotion project) for `pipeline-explainer.spec.md`. Builtins (AbsoluteFill, Sequ
 Series, Img, Audio) are assumed and not listed.
 
 All timing is driven by `useCurrentFrame()` + `interpolate()` + `spring()` — never CSS
-transitions.
+transitions. Components must match the docs theme (see "Design tokens").
+
+## Design tokens
+
+Mirror `docs/assets/*.mmd` so the video is on-brand with the diagrams:
+
+- `bg` `#070b14` · `text` `#e6edf3` · `line` `#38bdf8` · font `Inter`
+- Phase accents: `generation` `#38bdf8` · `reflection` `#22d3ee` · `ranking` `#60a5fa`
+  · `tournament` `#a78bfa` · `metaReview` `#f0abfc` · `evolution` `#2dd4bf`
+  · `proximity` `#fbbf24` · `io`/`success` `#34d399` · `error` `#f87171`
+- Reusable stills via `staticFile()`: `hero.png`, `pipeline.png`, `architecture.png`,
+  `decode.png` (copy into the Remotion project's `public/` at build time).
 
 ### HeroMark
 
-Animated Apple-Silicon chip emitting a swarm of agent nodes (the README hero motif).
+Animated Apple-Silicon chip emitting a swarm of agent nodes — wraps `hero.png` with a
+glow/scale animation (the README hero motif).
 
 - Props: `{ frame: number, scale: number }`
 

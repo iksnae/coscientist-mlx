@@ -29,6 +29,23 @@ A ~25-second explainer (30 fps, 750 frames, 1920×1080 landscape) of the
 
 `docs/ARCHITECTURE.md` §1 (pipeline) + README "The pipeline".
 
+## Visual language
+
+Match the docs exactly — the video is the diagrams + hero in motion, same brand.
+
+- **Palette** (from the `docs/assets/*.mmd` theme): background `#070b14`; per-phase
+  accents — Generation `#38bdf8`, Reflection `#22d3ee`, Ranking `#60a5fa`, Tournament
+  `#a78bfa`, Meta-Review `#f0abfc`, Evolution `#2dd4bf`, Proximity `#fbbf24`; I/O /
+  success `#34d399`; error `#f87171`. Text `#e6edf3`. Font Inter.
+- **Source assets** (reuse via `staticFile()`, don't re-illustrate):
+  - `docs/assets/hero.png` — opening/closing `HeroMark` and the closing-card backdrop.
+  - `docs/assets/pipeline.png` — reference layout for `AgentNode` placement.
+  - `docs/assets/architecture.png` — the Scene 4 DIP / local-vs-remote beat.
+  - `docs/assets/decode.png` — optional inset during the tournament/scoring beat.
+- **Motion**: each node uses its per-phase accent as glow/stroke; `FlowArrow`s draw in
+  the cyan line color `#38bdf8`; `EloBar`s tint Tournament-purple. Reveal and sequence
+  with `spring()` + `interpolate()` only — no CSS transitions.
+
 ## Components used
 
 - `HeroMark`: chip-emitting-swarm mark, props `{ frame, scale }`

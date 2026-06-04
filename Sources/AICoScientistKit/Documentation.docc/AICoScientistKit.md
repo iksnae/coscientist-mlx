@@ -18,6 +18,10 @@ The system follows a *generate → debate → evolve* loop. A ``CoScientistEngin
 orchestrates seven single-responsibility agents over an iterative pipeline, using an
 Elo tournament for self-play ranking and embedding-based clustering for diversity:
 
+![System design: a scientist provides a research goal; the multi-agent engine runs Generation, Reflection, Ranking, Tournament, Meta-Review, Evolution, and Proximity in a self-improving loop, routes each stage to an on-device MLX or remote backend, and returns the top-ranked hypotheses with a meta-review and clusters.](system-design)
+
+The per-agent loop in detail:
+
 ![The seven-agent pipeline: an initial generation/reflection/ranking/tournament pass followed by an N-times refinement loop of meta-review, evolution, reflection, ranking, tournament, and proximity clustering.](pipeline)
 
 Start a run with just a research goal and a model:
