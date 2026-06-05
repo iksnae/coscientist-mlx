@@ -1,4 +1,5 @@
 import AICoScientistKit
+import AICoScientistMLX
 import Foundation
 import SwiftUI
 
@@ -19,6 +20,9 @@ private struct ModelsSettings: View {
     @State private var store = SettingsStore.shared
     @State private var downloaded: [ModelCache.DownloadedModel] = []
     @State private var totalBytes: Int64 = 0
+    @State private var downloadingKey: String?
+    @State private var downloadProgress = 0.0
+    @State private var actionError: String?
 
     var body: some View {
         @Bindable var store = store
@@ -32,47 +36,92 @@ private struct ModelsSettings: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
 
-            Section("Catalog (pinned, verified)") {
-                ForEach(ModelCatalog.all) { model in
-                    HStack {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(model.displayName)
-                            Text(model.repoID).font(.caption).foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        if ModelCache.isDownloaded(model.repoID) {
-                            Label(byteString(ModelCache.sizeBytes(model.repoID)),
-                                systemImage: "checkmark.circle.fill")
-                                .foregroundStyle(.green).font(.caption)
-                        } else {
-                            Text("~\(String(format: "%.1f", model.approxSizeGB)) GB")
-                                .font(.caption).foregroundStyle(.secondary)
-                        }
-                    }
-                }
+            Section("Models (pinned, verified)") {
+                ForEach(ModelCatalog.all) { model in catalogRow(model) }
+                Text("Download a model here to use it offline, or delete it to reclaim disk. "
+                    + "Hosted (OpenAI-compatible) models always run over the network.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
 
-            Section("Downloaded — \(byteString(totalBytes)) total") {
-                if downloaded.isEmpty {
-                    Text("No models downloaded yet.").font(.caption).foregroundStyle(.secondary)
-                } else {
-                    ForEach(downloaded, id: \.repoID) { item in
+            if !otherDownloads.isEmpty {
+                Section("Other downloads") {
+                    ForEach(otherDownloads, id: \.repoID) { item in
                         HStack {
                             Text(item.repoID).font(.caption).lineLimit(1).truncationMode(.middle)
                             Spacer()
                             Text(byteString(item.bytes)).font(.caption).foregroundStyle(.secondary)
                             Button(role: .destructive) {
-                                try? ModelCache.clear(item.repoID)
-                                refresh()
+                                try? ModelCache.clear(item.repoID); refresh()
                             } label: { Image(systemName: "trash") }
                             .buttonStyle(.borderless).help("Delete to reclaim disk")
                         }
                     }
                 }
             }
+
+            Section { Text("\(byteString(totalBytes)) used on disk").font(.caption).foregroundStyle(.secondary) }
         }
         .formStyle(.grouped)
         .onAppear(perform: refresh)
+        .alert("Couldn’t download", isPresented: .constant(actionError != nil), presenting: actionError) { _ in
+            Button("OK") { actionError = nil }
+        } message: { Text($0) }
+    }
+
+    @ViewBuilder private func catalogRow(_ model: CatalogModel) -> some View {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(model.displayName)
+                Text(model.repoID).font(.caption).foregroundStyle(.secondary)
+                    .lineLimit(1).truncationMode(.middle)
+            }
+            Spacer()
+            if downloadingKey == model.key {
+                ProgressView(value: downloadProgress).frame(width: 70)
+                Text("\(Int(downloadProgress * 100))%")
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary).frame(width: 34)
+            } else if ModelCache.isDownloaded(model.repoID) {
+                Text(byteString(ModelCache.sizeBytes(model.repoID)))
+                    .font(.caption).foregroundStyle(.secondary)
+                Button(role: .destructive) {
+                    try? ModelCache.clear(model.repoID); refresh()
+                } label: { Image(systemName: "trash") }
+                .buttonStyle(.borderless).help("Delete to reclaim disk")
+            } else {
+                Text("~\(String(format: "%.1f", model.approxSizeGB)) GB")
+                    .font(.caption).foregroundStyle(.secondary)
+                Button { startDownload(model) } label: {
+                    Image(systemName: "arrow.down.circle")
+                }
+                .buttonStyle(.borderless).help("Download for offline use")
+                .disabled(downloadingKey != nil)
+            }
+        }
+    }
+
+    /// Downloaded models that aren't in the curated catalog (so they can still be cleared).
+    private var otherDownloads: [ModelCache.DownloadedModel] {
+        downloaded.filter { d in !ModelCatalog.all.contains { $0.repoID == d.repoID } }
+    }
+
+    private func startDownload(_ model: CatalogModel) {
+        if case let .insufficientDisk(needed, free) = DownloadGuard.decide(forKeyOrID: model.key) {
+            actionError = "\(model.displayName) needs ~\(byteString(needed)), but only "
+                + "\(byteString(free)) is free. Delete a model or free up space."
+            return
+        }
+        downloadingKey = model.key
+        downloadProgress = 0
+        Task {
+            do {
+                try await ModelDownloader.download(model.key) { fraction in
+                    Task { @MainActor in downloadProgress = fraction }
+                }
+            } catch {
+                await MainActor.run { actionError = "\(error)" }
+            }
+            await MainActor.run { downloadingKey = nil; refresh() }
+        }
     }
 
     private func refresh() {
