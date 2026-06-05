@@ -172,22 +172,28 @@ public actor CoScientistEngine {
     }
 
     private func reflectionPhase(goal: String) async {
-        let agent = ReflectionAgent()
         let n = hypotheses.count
-        for i in hypotheses.indices {
-            if Task.isCancelled { break }
-            do {
-                let review = try await agent.run(
-                    .init(researchGoal: goal, hypothesisText: hypotheses[i].text),
-                    using: router.decoder(for: .reflection))
+        guard n > 0, !Task.isCancelled else { return }
+        report("reflection", "reviewing \(n)", completed: 0, total: n)
+        var applied = 0
+        do {
+            // One structured call reviews the whole pool (batched), aligned to pool order.
+            let result = try await BatchReflectionAgent().run(
+                .init(researchGoal: goal, hypotheses: hypotheses.map(\.text)),
+                using: router.decoder(for: .reflection))
+            for (i, review) in result.reviews.prefix(n).enumerated() {
                 hypotheses[i].reviews.append(review)
                 hypotheses[i].score = review.scores.overall
                 metrics.reviewsCount += 1
-            } catch {
-                errors.append("reflection[\(i)]: \(error)")
+                applied += 1
             }
-            report("reflection", "review \(i + 1)/\(n)", completed: i + 1, total: n)
+            if result.reviews.count < n {
+                errors.append("reflection: model returned \(result.reviews.count)/\(n) reviews")
+            }
+        } catch {
+            errors.append("reflection: \(error)")
         }
+        report("reflection", "reviewed \(applied)/\(n)", completed: n, total: n)
     }
 
     /// Initial ordering by review score (deterministic). Elo from the tournament is the

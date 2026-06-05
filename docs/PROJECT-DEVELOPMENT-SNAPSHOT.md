@@ -17,11 +17,12 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
-- **M10 — Foundation Models backend** (PR #36). Gated
-  `AICoScientistFoundationModels` adapter + `InferenceBackend` resolver;
-  CLI `--backend` + app picker. See `docs/MILESTONE-10-CLOSEOUT.md`.
-  134 tests / 30 suites; macOS app builds.
-- **M9 — Transparent activity** (PR #35). See `docs/MILESTONE-9-CLOSEOUT.md`.
+- **M11 — Batched reflection** (PR #39). `BatchReflectionAgent` reviews the
+  whole pool in one decode (O(N)→1 reflection calls), backend-agnostic.
+  Re-scoped from cache-reuse/quant-tiers. See `docs/MILESTONE-11-CLOSEOUT.md`.
+  137 tests / 31 suites.
+- **M10 — Foundation Models backend** (PR #36). See `docs/MILESTONE-10-CLOSEOUT.md`.
+- **M9 — Transparent activity** (PR #35).
 - **M8 — Hypothesis selection + inspector** (PR #34).
 - **M7 — Hosted per-agent model backing** (PR #31).
 - **M6 — Agent tool-use loop** (PR #30).
@@ -29,9 +30,10 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-- **M11 — Inference optimization** — `docs/MILESTONE-11-PLANNING-DRAFT.md`.
-  Prompt/KV cache reuse + quant tiers. Next to grind (last of the
-  2026-06-04 batch).
+Nothing promoted — the **M6–M11 batch is fully delivered**. Run
+`milestone-planner` to scope the next arc. Candidate themes (see
+`docs/ROADMAP.md`): parity-test harness, native Foundation Models tool
+calling, iOS parity.
 
 ## Pointers
 

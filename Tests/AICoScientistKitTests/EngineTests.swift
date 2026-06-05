@@ -19,7 +19,10 @@ private struct ScriptedModel: LanguageModel {
             return #"{"hypotheses":[{"text":"Hypothesis Alpha","justification":"j"},{"text":"Hypothesis Beta","justification":"j"}]}"#
         }
         if system.contains("Hypothesis Reflection Agent") {
-            return #"{"scores":{"scientificSoundness":0.8,"novelty":0.7,"relevance":0.75,"testability":0.9,"clarity":0.8,"impact":0.6},"reviewSummary":"solid","safetyEthicalConcerns":"None identified","strengths":["s"],"weaknesses":["w"],"suggestions":["fix"]}"#
+            // Batched reflection: one structured call returns a review per hypothesis. Two
+            // entries cover the initial pool of 2; the engine applies prefix(poolSize).
+            let review = #"{"scores":{"scientificSoundness":0.8,"novelty":0.7,"relevance":0.75,"testability":0.9,"clarity":0.8,"impact":0.6},"reviewSummary":"solid","safetyEthicalConcerns":"None identified","strengths":["s"],"weaknesses":["w"],"suggestions":["fix"]}"#
+            return #"{"reviews":[\#(review),\#(review)]}"#
         }
         if system.contains("Hypothesis Evolution Agent") {
             return #"{"originalText":"o","refinedText":"Refined Hypothesis","refinementSummary":"s"}"#
@@ -152,11 +155,11 @@ struct EngineTests {
 
         // Initial tournament: 2 hypotheses × 3 rounds = 6 (post-evolution pool of 1 skips).
         #expect(await tournamentCounter.count == 6)
-        // gen 1 + reflection 2 + meta 1 + evolution 1 + reflection 1 + proximity 1 = 7.
-        #expect(await defaultCounter.count == 7)
+        // gen 1 + reflection 1 (batched) + meta 1 + evolution 1 + reflection 1 + proximity 1 = 6.
+        #expect(await defaultCounter.count == 6)
     }
 
-    @Test("Emits granular progress: phases, per-review, and per-tournament-match")
+    @Test("Emits granular progress: phases, batched reflection, and per-tournament-match")
     func progressEvents() async {
         let collector = ProgressCollector()
         _ = await smallEngine(model: ScriptedModel()).run(researchGoal: "g") { collector.add($0) }
@@ -166,10 +169,10 @@ struct EngineTests {
         #expect(events.contains { $0.phase == "proximity" })
         #expect(events.contains { $0.iteration == 1 })   // refinement round reported
 
-        // Per-review sub-steps with detail + countable totals.
-        let reviews = events.filter { $0.phase == "reflection" && $0.detail.hasPrefix("review") }
-        #expect(reviews.contains { $0.detail.contains("review 1/2") })
-        #expect(reviews.contains { $0.fractionCompleted == 0.5 })
+        // Batched reflection: a step over the whole pool (total == pool size), then "reviewed".
+        let reflections = events.filter { $0.phase == "reflection" }
+        #expect(reflections.contains { $0.total == 2 })
+        #expect(reflections.contains { $0.detail.contains("reviewed") })
 
         // Per-match sub-steps: 2 hypotheses × 3 rounds = 6, each with a winner in the detail.
         let matches = events.filter { $0.phase == "tournament" && $0.detail.hasPrefix("match") }
