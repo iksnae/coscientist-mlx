@@ -107,10 +107,11 @@ private struct ProvidersSettings: View {
                 if let error = store.modelsError {
                     Text(error).font(.caption).foregroundStyle(.red)
                 }
-                Text("OpenAI-compatible. Enter a base URL, API key, and model — hosted models then "
-                    + "appear automatically as a study's Generator or Reviewer (no refresh needed). "
-                    + "The key is stored locally in app preferences.")
+                // Single string literal (not `+`-concatenated) so SwiftUI parses the markdown
+                // link and makes it tappable, opening the keys page in the browser.
+                Text("OpenAI-compatible. Get an API key from your OpenAI account [here](https://platform.openai.com/api-keys), then paste it above with a base URL and model — hosted models appear automatically as a study's Generator or Reviewer. The key is stored locally in app preferences.")
                     .font(.caption).foregroundStyle(.secondary)
+                    .tint(.blue)
             }
 
             Section("Hugging Face") {
