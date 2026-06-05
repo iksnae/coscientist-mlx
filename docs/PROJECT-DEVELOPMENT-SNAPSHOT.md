@@ -17,6 +17,13 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
+- **M21 — Professional UI redesign.** Differentiated sidebar (title
+  auto-tracks the goal until renamed); pickers show the selected model + a
+  concise per-choice caption (strengths in menu items); synthesis-led
+  conclusion with a truncated/expandable top hypothesis (no verbatim
+  duplication); plain, correctly pluralized status (pure `RunStatusText`);
+  `ActivityFeedView` extracted. 159 tests / 38 suites; macOS + iOS build.
+  See `docs/MILESTONE-21-CLOSEOUT.md`.
 - **M20 — Provider model loading + Settings state cleanup.** Hosted models
   auto-load + cache so they appear in the Study pickers at launch (pure
   `HostedModels` Kit resolver; no manual refresh); deleted dead
@@ -58,16 +65,12 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-M16/M17, the M18 spike, and **M20** (provider loading + state cleanup)
-shipped. Now a **UX-quality arc**:
+M16/M17, the M18 spike, and the UX-quality arc (**M20** provider loading/
+state cleanup, **M21** professional UI redesign) shipped. Next:
 
-- **M21 — Professional UI redesign** — main study view, sidebar, pickers,
-  results (differentiated titles, selected-model in pickers, non-duplicated
-  conclusion, plain status, hierarchy) via the SwiftUI design skills.
-  `docs/MILESTONE-21-PLANNING-DRAFT.md`. *(draft, next to grind)*
 - **M19 — LAN model offload** — Mac OpenAI-compatible endpoint + iPhone/iPad
-  offload via `RemoteLanguageModel` over Bonjour (M7 seam). *(parked behind
-  the UX arc)*
+  offload via `RemoteLanguageModel` over Bonjour (M7 seam).
+  `docs/MILESTONE-19-PLANNING-DRAFT.md`. *(draft, next to grind)*
 - **Operator-pending:** live two-device sync verification for M17 (needs
   two iCloud-signed devices) — not reproducible headlessly.
 - Candidate themes (see `docs/ROADMAP.md`): multi-indicator run progress,
