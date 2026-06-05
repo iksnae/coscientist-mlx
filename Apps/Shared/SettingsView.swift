@@ -23,32 +23,13 @@ private struct ModelsSettings: View {
     var body: some View {
         @Bindable var store = store
         Form {
-            Section("Defaults") {
-                Picker("Generator", selection: $store.generatorKey) {
-                    ForEach(ModelCatalog.generators) { Text($0.displayName).tag($0.key) }
-                }
-                .disabled(store.backend == .foundation)
+            Section("Embeddings (on-device)") {
                 Picker("Embedder", selection: $store.embedderKey) {
                     ForEach(ModelCatalog.embedders) { Text($0.displayName).tag($0.key) }
                 }
-            }
-
-            Section("Inference backend") {
-                Picker("Generator backend", selection: $store.backend) {
-                    Text("MLX (open models)").tag(InferenceBackend.mlx)
-                    Text("Apple Foundation Models").tag(InferenceBackend.foundation)
-                }
-                #if os(macOS)
-                    .pickerStyle(.radioGroup)
-                #endif
-                if store.backend == .foundation && !store.foundationAvailable {
-                    Text("Apple Foundation Models isn't available on this device "
-                        + "(needs Apple Intelligence on macOS 26+). MLX is used until then.")
-                        .font(.caption).foregroundStyle(.orange)
-                } else if store.backend == .foundation {
-                    Text("Generation runs on Apple's on-device model; embeddings stay on MLX.")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
+                Text("Embeddings always run on-device. The Generator and Reviewer models are "
+                    + "chosen per study.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
 
             Section("Catalog (pinned, verified)") {
@@ -127,29 +108,8 @@ private struct ProvidersSettings: View {
                 if let error = store.modelsError {
                     Text(error).font(.caption).foregroundStyle(.red)
                 }
-                Text("OpenAI-compatible. Generation, evolution, and embeddings stay on-device "
-                    + "unless you back those agents below; the key is stored locally in app preferences.")
-                    .font(.caption).foregroundStyle(.secondary)
-            }
-
-            Section("Per-agent backing") {
-                HStack {
-                    Button("All local") { store.applyPreset(.allLocal) }
-                    Button("Hosted judge") { store.applyPreset(.hostedJudge) }
-                    Button("Hosted all") { store.applyPreset(.hostedAll) }
-                }
-                .disabled(!store.remoteEnabled)
-                DisclosureGroup("Advanced — assign each agent") {
-                    ForEach(AgentRole.allCases, id: \.self) { role in
-                        Picker(role.rawValue, selection: backendBinding(role, store)) {
-                            Text("Local").tag("")
-                            ForEach(modelChoices, id: \.self) { Text($0).tag($0) }
-                        }
-                    }
-                }
-                .disabled(!store.remoteEnabled)
-                Text("“Local” keeps an agent on the on-device model. Hosted backing makes "
-                    + "tool-use (--tools) more reliable for that agent.")
+                Text("OpenAI-compatible. Add a provider and refresh, then pick a hosted model as "
+                    + "a study's Generator or Reviewer. The key is stored locally in app preferences.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
@@ -173,20 +133,5 @@ private struct ProvidersSettings: View {
             }
             .disabled(!store.wrappedValue.remoteEnabled)
         }
-    }
-
-    /// Model ids offered in the per-agent pickers: discovered list, falling back to the default
-    /// model, always including any already-assigned ids so a selection is never dropped.
-    private var modelChoices: [String] {
-        var ids = store.fetchedModels
-        if ids.isEmpty, !store.remoteModel.isEmpty { ids = [store.remoteModel] }
-        for id in store.agentModels.values where !ids.contains(id) { ids.append(id) }
-        return ids
-    }
-
-    private func backendBinding(_ role: AgentRole, _ store: SettingsStore) -> Binding<String> {
-        Binding(
-            get: { store.agentModels[role.rawValue] ?? "" },
-            set: { store.assign(role, to: $0.isEmpty ? nil : $0) })
     }
 }

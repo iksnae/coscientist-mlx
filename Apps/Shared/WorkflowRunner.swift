@@ -72,48 +72,38 @@ final class WorkflowRunner {
         do {
             let decodeMetrics = DecodeMetrics()
 
-            // Hosted per-agent backings (gated by the study's "Use hosted models" toggle).
-            var backends: [AgentRole: RoleBackend] = [:]
-            let remoteBaseURL = URL(string: settings.remoteBaseURL)
-            if study.useRemoteJudge, settings.remoteReady, remoteBaseURL != nil {
-                backends = settings.roleBackends
-                if backends.isEmpty {
-                    // No explicit per-agent picks → classic reflection + tournament judge split.
-                    backends = [
-                        .reflection: .remote(settings.remoteModel),
-                        .tournament: .remote(settings.remoteModel),
-                    ]
-                }
-            }
+            // Per-study model selection: the Generator backs generation/evolution/ranking/
+            // meta-review; the Reviewer backs reflection + tournament. A hosted choice falls
+            // back to on-device when no provider is configured (local-first).
             let apiKey = settings.openAIKey
-            let makeRemote: (String) -> any SchemaConstrainedDecoding = { id in
+            let baseURL = URL(string: settings.remoteBaseURL)
+                ?? URL(string: "https://api.openai.com/v1")!
+            func sanitize(_ choice: ModelChoice) -> ModelChoice {
+                (choice.isHosted && !settings.remoteReady)
+                    ? .onDevice(ModelCatalog.defaultGeneratorKey) : choice
+            }
+            let generatorChoice = sanitize(study.generator)
+            let reviewerChoice = sanitize(study.reviewer)
+
+            // Pre-load each distinct on-device model (async), cached by key.
+            var onDevice: [String: any SchemaConstrainedDecoding] = [:]
+            func ensureOnDevice(_ key: String) async throws {
+                guard onDevice[key] == nil else { return }
+                let model = try await MLXLanguageModel.load(key) { [weak self] fraction in
+                    Task { @MainActor in self?.downloadProgress = fraction }
+                }
+                onDevice[key] = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
+            }
+            if case .onDevice(let key) = generatorChoice { try await ensureOnDevice(key) }
+            if case .onDevice(let key) = reviewerChoice { try await ensureOnDevice(key) }
+
+            func makeHosted(_ id: String) -> any SchemaConstrainedDecoding {
                 SchemaConstrainedDecoder(
-                    model: RemoteLanguageModel(
-                        model: id, apiKey: apiKey,
-                        baseURL: remoteBaseURL ?? URL(string: "https://api.openai.com/v1")!),
+                    model: RemoteLanguageModel(model: id, apiKey: apiKey, baseURL: baseURL),
                     metrics: decodeMetrics)
             }
-
-            // The local generator backs every role not assigned a hosted model. Skip loading it
-            // entirely when all roles are hosted (e.g. the "Hosted all" preset) — no wasted download.
-            let allRolesHosted =
-                !backends.isEmpty && AgentRole.allCases.allSatisfy { backends[$0] != nil }
-            let defaultDecoder: any SchemaConstrainedDecoding
-            if allRolesHosted {
-                defaultDecoder = makeRemote(settings.remoteModel)
-            } else {
-                let model: any LanguageModel
-                let effectiveBackend = InferenceBackend.resolve(
-                    requested: settings.backend,
-                    foundationAvailable: FoundationModelsBackend.isAvailable)
-                if effectiveBackend == .foundation, let fm = FoundationModelsBackend.makeModel() {
-                    model = fm  // on-device Apple model; no download
-                } else {
-                    model = try await MLXLanguageModel.load(study.generatorKey) { [weak self] fraction in
-                        Task { @MainActor in self?.downloadProgress = fraction }
-                    }
-                }
-                defaultDecoder = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
+            let makeOnDevice: (String) -> any SchemaConstrainedDecoding = { key in
+                onDevice[key] ?? makeHosted(key)  // both choices are pre-loaded; fallback is dead
             }
 
             let embedder = try await MLXEmbeddingModel.load(settings.embedderKey) { [weak self] fraction in
@@ -121,11 +111,9 @@ final class WorkflowRunner {
             }
             downloadProgress = nil
 
-            let router: any DecoderRouting =
-                backends.isEmpty
-                ? StaticDecoderRouter(defaultDecoder)
-                : RoleDecoderRouter.backed(
-                    default: defaultDecoder, backends: backends, makeRemote: makeRemote)
+            let router = StudyRouting.router(
+                generator: generatorChoice, reviewer: reviewerChoice,
+                makeOnDevice: makeOnDevice, makeHosted: makeHosted)
 
             let engine = CoScientistEngine(
                 router: router,

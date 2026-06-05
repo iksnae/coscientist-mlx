@@ -18,6 +18,11 @@ final class Study {
     var hypothesesPerGeneration: Int = 4
     var iterations: Int = 1
     var useRemoteJudge: Bool = false
+    // M13: per-study model selection (kind + id; computed `generator`/`reviewer` below).
+    var generatorChoiceKind: String = "onDevice"
+    var generatorChoiceID: String = ModelCatalog.defaultGeneratorKey
+    var reviewerChoiceKind: String = "onDevice"
+    var reviewerChoiceID: String = ModelCatalog.defaultGeneratorKey
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
     var statusRaw: String = StudyStatus.draft.rawValue
@@ -31,6 +36,18 @@ final class Study {
     var status: StudyStatus {
         get { StudyStatus(rawValue: statusRaw) ?? .draft }
         set { statusRaw = newValue.rawValue }
+    }
+
+    /// The model that generates + evolves + ranks + meta-reviews hypotheses.
+    var generator: ModelChoice {
+        get { ModelChoice(kind: generatorChoiceKind, id: generatorChoiceID) }
+        set { (generatorChoiceKind, generatorChoiceID) = newValue.kindAndID }
+    }
+
+    /// The model that reviews + judges hypotheses (reflection + tournament).
+    var reviewer: ModelChoice {
+        get { ModelChoice(kind: reviewerChoiceKind, id: reviewerChoiceID) }
+        set { (reviewerChoiceKind, reviewerChoiceID) = newValue.kindAndID }
     }
 
     /// The latest run's results, decoded on demand.

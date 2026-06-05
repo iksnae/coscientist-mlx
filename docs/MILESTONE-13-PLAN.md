@@ -10,7 +10,11 @@ Model selection control-flow — one mental model (macOS)
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-13-PLAN.md.
+Ready. Promoted from `docs/MILESTONE-13-PLANNING-DRAFT.md`.
+
+Resolved open questions: the picker offers download proactively and the run
+still guards; "Reviewer" = the reflection + tournament roles (the generator
+backs generation/evolution/meta-review/ranking).
 
 ## Goal
 
@@ -59,7 +63,7 @@ Expected behavior:
 
 ## Primary Scope
 
-### Track A — Unified selection model (AICoScientistKit + Apps/Shared)
+### Track A — Unified selection model + model research data (AICoScientistKit + Apps/Shared)
 
 A single `ModelChoice` (on-device catalog key | hosted model id) with a pure
 resolver that turns a Study's Generator + Reviewer choices into the engine's
@@ -68,12 +72,22 @@ replacing the `backend` + `agentModels` + `useRemoteJudge` tangle. Pure,
 MLX-free, unit-tested. (`swiftdata-pro` for the `Study` model changes;
 keep a lightweight migration/back-compat for existing studies.)
 
-### Track B — Install-aware model picker (Apps/Shared)
+Also enrich `CatalogModel` with the research we already collected in
+`docs/MODELS.md` — a short **strengths** note and a **tier** (Small / Mid /
+Large) per model — and add a pure **compatibility** check: given the
+device's physical RAM (`ProcessInfo.physicalMemory`, injected as a value so
+it's testable), decide whether a model fits (`minRAMGB`) and how
+comfortably. Pure + unit-tested; the data source is `docs/MODELS.md`.
 
-A reusable `ModelPicker` showing install state (downloaded + size / download
-size), RAM-fit, and inline download, plus hosted models from
-`RemoteModels.list`. Replaces the bare catalog `Picker`s. Built per
-`swiftui-design-principles` (restraint, hierarchy) + `swiftui-pro`.
+### Track B — Install- and system-aware model picker (Apps/Shared)
+
+A reusable `ModelPicker` that uses the device's RAM to surface **compatible**
+models first (and clearly mark ones that won't fit), shows each model's
+**strengths + tier + size/RAM** from the research (Track A), its install
+state (downloaded ✓ + size / "downloads ~N GB"), and an inline download —
+plus hosted models from `RemoteModels.list`. Replaces the bare catalog
+`Picker`s. Built per `swiftui-design-principles` (restraint, hierarchy) +
+`swiftui-pro`.
 
 ### Track C — Settings slim-down + copy (Apps/Shared)
 
@@ -92,8 +106,13 @@ Refactor the large `StudyDetailView`/`SettingsView` into small subviews per
   on-device (local-first).
 - The `Study` model stores Generator + Reviewer choices; existing saved
   studies still load (migration/back-compat), unit-tested where logic exists.
-- The model picker shows install state + size + RAM-fit and offers inline
-  download; hosted models appear when a provider is configured.
+- `CatalogModel` carries strengths + tier from `docs/MODELS.md`, and a pure
+  compatibility check (model `minRAMGB` vs injected device RAM) returns
+  fits/comfort, unit-tested.
+- The model picker uses device RAM to surface compatible models first (and
+  marks ones that won't fit), shows each model's strengths + tier + size +
+  RAM-fit and install state, and offers inline download; hosted models
+  appear when a provider is configured.
 - Settings no longer sets per-study model choices; its copy names Generator /
   Reviewer and on-device / hosted unambiguously (no "judge/backend").
 - macOS app builds and runs the new flow; no engine behavior change beyond
