@@ -70,45 +70,62 @@ final class WorkflowRunner {
 
         let settings = SettingsStore.shared
         do {
-            let model: any LanguageModel
-            let effectiveBackend = InferenceBackend.resolve(
-                requested: settings.backend, foundationAvailable: FoundationModelsBackend.isAvailable)
-            if effectiveBackend == .foundation, let fm = FoundationModelsBackend.makeModel() {
-                model = fm  // on-device Apple model; no download
-            } else {
-                model = try await MLXLanguageModel.load(study.generatorKey) { [weak self] fraction in
-                    Task { @MainActor in self?.downloadProgress = fraction }
-                }
-            }
-            let embedder = try await MLXEmbeddingModel.load(settings.embedderKey) { [weak self] fraction in
-                Task { @MainActor in self?.downloadProgress = fraction }
-            }
-            downloadProgress = nil
             let decodeMetrics = DecodeMetrics()
-            let localDecoder = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
 
-            let router: any DecoderRouting
-            if study.useRemoteJudge, settings.remoteReady, let baseURL = URL(string: settings.remoteBaseURL) {
-                // Explicit per-role assignments win; with none, fall back to the classic
-                // reflection + tournament judge split over the configured remote model.
-                var backends = settings.roleBackends
+            // Hosted per-agent backings (gated by the study's "Use hosted models" toggle).
+            var backends: [AgentRole: RoleBackend] = [:]
+            let remoteBaseURL = URL(string: settings.remoteBaseURL)
+            if study.useRemoteJudge, settings.remoteReady, remoteBaseURL != nil {
+                backends = settings.roleBackends
                 if backends.isEmpty {
+                    // No explicit per-agent picks → classic reflection + tournament judge split.
                     backends = [
                         .reflection: .remote(settings.remoteModel),
                         .tournament: .remote(settings.remoteModel),
                     ]
                 }
-                let apiKey = settings.openAIKey
-                let makeRemote: (String) -> any SchemaConstrainedDecoding = { id in
-                    SchemaConstrainedDecoder(
-                        model: RemoteLanguageModel(model: id, apiKey: apiKey, baseURL: baseURL),
-                        metrics: decodeMetrics)
-                }
-                router = RoleDecoderRouter.backed(
-                    default: localDecoder, backends: backends, makeRemote: makeRemote)
-            } else {
-                router = StaticDecoderRouter(localDecoder)
             }
+            let apiKey = settings.openAIKey
+            let makeRemote: (String) -> any SchemaConstrainedDecoding = { id in
+                SchemaConstrainedDecoder(
+                    model: RemoteLanguageModel(
+                        model: id, apiKey: apiKey,
+                        baseURL: remoteBaseURL ?? URL(string: "https://api.openai.com/v1")!),
+                    metrics: decodeMetrics)
+            }
+
+            // The local generator backs every role not assigned a hosted model. Skip loading it
+            // entirely when all roles are hosted (e.g. the "Hosted all" preset) — no wasted download.
+            let allRolesHosted =
+                !backends.isEmpty && AgentRole.allCases.allSatisfy { backends[$0] != nil }
+            let defaultDecoder: any SchemaConstrainedDecoding
+            if allRolesHosted {
+                defaultDecoder = makeRemote(settings.remoteModel)
+            } else {
+                let model: any LanguageModel
+                let effectiveBackend = InferenceBackend.resolve(
+                    requested: settings.backend,
+                    foundationAvailable: FoundationModelsBackend.isAvailable)
+                if effectiveBackend == .foundation, let fm = FoundationModelsBackend.makeModel() {
+                    model = fm  // on-device Apple model; no download
+                } else {
+                    model = try await MLXLanguageModel.load(study.generatorKey) { [weak self] fraction in
+                        Task { @MainActor in self?.downloadProgress = fraction }
+                    }
+                }
+                defaultDecoder = SchemaConstrainedDecoder(model: model, metrics: decodeMetrics)
+            }
+
+            let embedder = try await MLXEmbeddingModel.load(settings.embedderKey) { [weak self] fraction in
+                Task { @MainActor in self?.downloadProgress = fraction }
+            }
+            downloadProgress = nil
+
+            let router: any DecoderRouting =
+                backends.isEmpty
+                ? StaticDecoderRouter(defaultDecoder)
+                : RoleDecoderRouter.backed(
+                    default: defaultDecoder, backends: backends, makeRemote: makeRemote)
 
             let engine = CoScientistEngine(
                 router: router,
