@@ -10,7 +10,8 @@ Unidirectional state (Redux) — store, reducers, middleware; migrate run + sett
 
 ## Status
 
-In progress
+In progress — Track A (Redux core) landed; Tracks B (run+download), C (settings),
+D (study) pending, delivered as separate chunks.
 
 ## Duration And Usage Tracking
 
@@ -27,7 +28,7 @@ In progress
 
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
-| Generic `@Observable` Redux core (State, Action, Reducer, Store sync+async dispatch, async Middleware) in the Kit, unit-tested. | Pending | |
+| Generic `@Observable` Redux core (State, Action, Reducer, Store sync+async dispatch, async Middleware) in the Kit, unit-tested. | Done | `Sources/AICoScientistKit/Redux/Store.swift` + `StoreTests` (4); 167/40 green. |
 | Run + download live state is a reduced `RunState`; visualizations + byte-reactive download render from it. | Pending | |
 | Settings + study selection/editing flow through actions; UserDefaults + SwiftData persistence in middleware; title-tracks-goal is a tested reducer. | Pending | |
 | Reducers test-first (mock, no GPU); side-effects only in middleware. | Pending | |
