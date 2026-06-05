@@ -1,5 +1,4 @@
 import AICoScientistKit
-import AppKit
 import Charts
 import SwiftData
 import SwiftUI
@@ -362,14 +361,12 @@ struct StudyDetailView: View {
 
     private func export(_ ext: String) {
         guard let snapshot = study.snapshot else { return }
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = "\(study.goal.prefix(40)).\(ext)"
-        panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        switch ext {
-        case "md": try? snapshot.markdown().write(to: url, atomically: true, encoding: .utf8)
-        case "csv": try? snapshot.csv().write(to: url, atomically: true, encoding: .utf8)
-        default: try? RunStore.save(snapshot, to: url)
+        PlatformExport.save(suggestedName: "\(study.goal.prefix(40)).\(ext)") { url in
+            switch ext {
+            case "md": try snapshot.markdown().write(to: url, atomically: true, encoding: .utf8)
+            case "csv": try snapshot.csv().write(to: url, atomically: true, encoding: .utf8)
+            default: try RunStore.save(snapshot, to: url)
+            }
         }
     }
 

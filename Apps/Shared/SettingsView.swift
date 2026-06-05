@@ -9,7 +9,9 @@ struct SettingsView: View {
             ModelsSettings().tabItem { Label("Models", systemImage: "cube.box") }
             ProvidersSettings().tabItem { Label("Providers", systemImage: "network") }
         }
-        .frame(width: 580, height: 480)
+        #if os(macOS)
+            .frame(width: 580, height: 480)   // sized for the macOS Settings window
+        #endif
     }
 }
 
@@ -36,7 +38,9 @@ private struct ModelsSettings: View {
                     Text("MLX (open models)").tag(InferenceBackend.mlx)
                     Text("Apple Foundation Models").tag(InferenceBackend.foundation)
                 }
-                .pickerStyle(.radioGroup)
+                #if os(macOS)
+                    .pickerStyle(.radioGroup)
+                #endif
                 if store.backend == .foundation && !store.foundationAvailable {
                     Text("Apple Foundation Models isn't available on this device "
                         + "(needs Apple Intelligence on macOS 26+). MLX is used until then.")

@@ -1,7 +1,10 @@
 import AICoScientistKit
-import AppKit
 import SwiftData
 import SwiftUI
+
+#if os(macOS)
+    import AppKit
+#endif
 
 /// The research workspace: a sidebar of studies, a detail pane for the selected one, and
 /// import/export of studies as `.coscientist` files.
@@ -10,6 +13,7 @@ struct StudiesView: View {
     @Query(sort: \Study.updatedAt, order: .reverse) private var studies: [Study]
     @State private var selection: Study?
     @State private var runner = WorkflowRunner()
+    @State private var showSettings = false
 
     var body: some View {
         NavigationSplitView {
@@ -40,12 +44,32 @@ struct StudiesView: View {
         .toolbar {
             ToolbarItemGroup {
                 Button(action: newStudy) { Label("New Study", systemImage: "plus") }
-                Button(action: importStudy) { Label("Import", systemImage: "square.and.arrow.down") }
+                #if os(macOS)
+                    Button(action: importStudy) {
+                        Label("Import", systemImage: "square.and.arrow.down")
+                    }
+                #endif
                 Button { if let selection { export(selection) } }
                     label: { Label("Export", systemImage: "square.and.arrow.up") }
                     .disabled(selection == nil)
+                #if os(iOS)
+                    Button { showSettings = true } label: { Label("Settings", systemImage: "gear") }
+                #endif
             }
         }
+        #if os(iOS)
+            .sheet(isPresented: $showSettings) {
+                NavigationStack {
+                    SettingsView()
+                        .navigationTitle("Settings")
+                        .toolbar {
+                            ToolbarItem(placement: .confirmationAction) {
+                                Button("Done") { showSettings = false }
+                            }
+                        }
+                }
+            }
+        #endif
     }
 
     private func newStudy() {
@@ -63,26 +87,25 @@ struct StudiesView: View {
     }
 
     private func export(_ study: Study) {
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = "\(study.goal.prefix(40)).coscientist"
-        panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        let data = try? JSONEncoder().encode(StudyDocument(study))
-        try? data?.write(to: url)
+        PlatformExport.save(suggestedName: "\(study.goal.prefix(40)).coscientist") { url in
+            try JSONEncoder().encode(StudyDocument(study)).write(to: url)
+        }
     }
 
-    private func importStudy() {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.allowedContentTypes = []   // accept any; .coscientist is JSON
-        guard panel.runModal() == .OK, let url = panel.url,
-            let data = try? Data(contentsOf: url),
-            let document = try? JSONDecoder().decode(StudyDocument.self, from: data)
-        else { return }
-        let study = document.makeStudy()
-        context.insert(study)
-        selection = study
-    }
+    #if os(macOS)
+        private func importStudy() {
+            let panel = NSOpenPanel()
+            panel.allowsMultipleSelection = false
+            panel.allowedContentTypes = []   // accept any; .coscientist is JSON
+            guard panel.runModal() == .OK, let url = panel.url,
+                let data = try? Data(contentsOf: url),
+                let document = try? JSONDecoder().decode(StudyDocument.self, from: data)
+            else { return }
+            let study = document.makeStudy()
+            context.insert(study)
+            selection = study
+        }
+    #endif
 }
 
 private struct StudyRow: View {
