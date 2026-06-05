@@ -167,10 +167,10 @@ are done. Next:
 
 Candidate themes (not yet drafted):
 
-- **Multi-indicator run progress.** Replace the single overloaded progress
-  bar with stacked indicators (segmented / radial / standard / charts /
-  custom SwiftUI) conveying activity + phase progress (operator idea,
-  2026-06-05).
+- ~~**Multi-indicator run progress.**~~ **Shipped** as a feature: the live
+  run now shows a phase breadcrumb (7 stages), iteration, a current-phase
+  radial gauge, pool size, and an Elo sparkline (`RunProgressView` + pure
+  `RunPipeline`), replacing the single overloaded bar.
 - **Model registry sync.** A synchronizable JSON model registry hosted on
   the repo / GitHub Pages, so model options + research update without a
   new build (operator idea).

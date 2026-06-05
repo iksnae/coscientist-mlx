@@ -189,7 +189,7 @@ struct StudyDetailView: View {
             }
 
             if live {
-                liveProgress
+                RunProgressView(runner: runner)
             } else {
                 Text(statusLine).font(.callout).foregroundStyle(.secondary)
             }
@@ -210,24 +210,6 @@ struct StudyDetailView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(study.goal.isEmpty || runner.running)
             }
-        }
-    }
-
-    @ViewBuilder private var liveProgress: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                if !runner.phase.isEmpty {
-                    Text(runner.phase.uppercased())
-                        .font(.caption2.bold().monospaced())
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(.tint.opacity(0.15), in: Capsule()).foregroundStyle(.tint)
-                }
-                if !runner.detail.isEmpty {
-                    Text(runner.detail).font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            if let fraction = runner.phaseFraction { ProgressView(value: fraction) }
-            Text(runner.status).font(.caption).foregroundStyle(.secondary)
         }
     }
 

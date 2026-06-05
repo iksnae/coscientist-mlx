@@ -26,6 +26,9 @@ final class WorkflowRunner {
     /// True only when this run actually needs to fetch a model (vs. loading one already cached),
     /// so the UI can say "Downloading" honestly rather than on every load.
     private(set) var downloadingNeeded = false
+    /// Refinement iteration: 0 during the initial pass, 1…maxIterations during refinement.
+    private(set) var iteration = 0
+    private(set) var maxIterations = 1
     private(set) var timeline: [ProgressPoint] = []
 
     private var task: Task<Void, Never>?
@@ -80,6 +83,7 @@ final class WorkflowRunner {
         phase = ""; detail = ""; completed = 0; total = 0
         hypotheses = []; errors = []; activity = []; metrics = ExecutionMetrics()
         timeline = []; downloadProgress = nil; activityStep = 0
+        iteration = 0; maxIterations = max(1, study.iterations)
         study.status = .running
 
         let settings = SettingsStore.shared
@@ -203,6 +207,7 @@ final class WorkflowRunner {
 
     private func apply(_ progress: WorkflowProgress) {
         phase = progress.phase
+        iteration = progress.iteration
         detail = progress.detail
         completed = progress.completed
         total = progress.total
