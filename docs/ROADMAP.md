@@ -116,6 +116,12 @@ at planning time.
   embedded; live two-device sync is the one operator-pending check. Adds
   `ci_post_clone.sh` for Xcode Cloud (public deps, no auth). See
   `docs/MILESTONE-17-CLOSEOUT.md`.
+- **M18 — Distributed cross-device compute (feasibility spike).** Found
+  **no first-party iCloud compute-sharing API** and that layer-split
+  distributed inference is impractical on iOS; recommends **local-network
+  offload** (Mac OpenAI-compatible server + `RemoteLanguageModel` over
+  Bonjour, reusing the M7 seam), drafted as M19. See
+  `docs/SPIKE-distributed-compute.md`, `docs/MILESTONE-18-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -134,14 +140,14 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The UX overhaul (M13–M15), **M16** (study title/CRUD + CloudKit-ready
-model), and **M17** (iCloud sync — signing + CloudKit private-DB
-container) have landed. Next in the **studies + sync arc**
-(`milestone-planner`, 2026-06-05):
+The studies + sync arc (M16 title/CRUD, M17 iCloud sync) and the M18
+distributed-compute spike are done. The spike's recommended follow-on is
+next:
 
-- **M18 — Distributed cross-device compute (feasibility spike).** Research
-  whether Apple Silicon across iCloud devices can run studies distributed;
-  a findings doc + verdict, no code commitment. *(draft)*
+- **M19 — LAN model offload.** A Mac runs an OpenAI-compatible endpoint;
+  the iPhone/iPad offload study inference to it via `RemoteLanguageModel`
+  (M7 seam), discovered over Bonjour/`NetworkBrowser`. The realistic
+  "harness Apple Silicon across my devices." *(draft, next to grind)*
 
 Candidate themes (not yet drafted):
 

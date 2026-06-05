@@ -17,6 +17,11 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
+- **M18 — Distributed cross-device compute (feasibility spike).** Verdict:
+  no first-party iCloud compute-sharing API; layer-split distributed
+  inference impractical on iOS; **recommend local-network offload** (Mac
+  server + `RemoteLanguageModel` over Bonjour, reusing M7), drafted as M19.
+  See `docs/SPIKE-distributed-compute.md`, `docs/MILESTONE-18-CLOSEOUT.md`.
 - **M17 — iCloud sync (SwiftData + CloudKit).** Real team signing
   (`G98TZJ75HL`) + per-app iCloud/CloudKit entitlements; `StudyContainer`
   on the CloudKit private DB with a local-first fallback. Both apps build
@@ -46,17 +51,14 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-The UX overhaul (M13–M15), **M16** (study title/CRUD), and **M17** (iCloud
-sync — signing + CloudKit container) shipped. Next in the **studies + sync
-arc** (drafted):
+M16 (study title/CRUD), M17 (iCloud sync), and the M18 distributed-compute
+spike shipped. The spike's recommended follow-on is next:
 
+- **M19 — LAN model offload** — Mac runs an OpenAI-compatible endpoint; the
+  iPhone/iPad offload study inference via `RemoteLanguageModel` over
+  Bonjour/`NetworkBrowser` (reuses the M7 seam). `docs/MILESTONE-19-PLANNING-DRAFT.md`. *(draft, next to grind)*
 - **Operator-pending:** live two-device sync verification for M17 (needs
-  two iCloud-signed devices) — the one acceptance not reproducible
-  headlessly.
-- **M18 — Distributed compute feasibility spike** — research + findings
-  doc; no signing needed. *(draft, next to grind)*
-- **M18 — Distributed compute feasibility spike** — research + findings
-  doc. *(draft)*
+  two iCloud-signed devices) — not reproducible headlessly.
 - Candidate themes (see `docs/ROADMAP.md`): multi-indicator run progress,
   model registry sync, parity-test harness, native FM tool calling.
 
