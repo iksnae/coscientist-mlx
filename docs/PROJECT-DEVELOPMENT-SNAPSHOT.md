@@ -29,11 +29,19 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-- **M13 — iOS polish** — `docs/MILESTONE-13-PLAN.md` (Ready). iPad-adaptive
-  multi-column layout + on-device memory/thermal hardening. Last of the
-  iOS arc.
+A user-layer control-flow + UX overhaul is drafted (mac first, then iOS),
+driven by the vendored Swift UI/UX skills:
+
+- **M13 — Model selection control-flow (macOS)** —
+  `docs/MILESTONE-13-PLANNING-DRAFT.md`. Per-study Generator + Reviewer
+  (each on-device | hosted); install-aware pickers; Settings = providers +
+  downloads. Next to grind.
+- **M14 — Run config + results outcome (macOS)** — expose hidden engine
+  params + a results header that states the conclusion. *(draft)*
+- **M15 — iOS** — port the redesign + iPad-adaptive layout + on-device
+  hardening (absorbs the earlier iPad-polish scope). *(draft)*
 - Candidate themes (see `docs/ROADMAP.md`): parity-test harness, native
-  Foundation Models tool calling, iOS HF-cache-path accuracy + study import.
+  Foundation Models tool calling.
 
 ## Pointers
 
