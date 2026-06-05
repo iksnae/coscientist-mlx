@@ -10,7 +10,8 @@ Unidirectional state (Redux) — store, reducers, middleware; migrate run + sett
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-22-PLAN.md.
+Ready. Delivering incrementally: Track A (core) → B (run+download) → C
+(settings) → D (study), each landing green in small commits.
 
 ## Goal
 
