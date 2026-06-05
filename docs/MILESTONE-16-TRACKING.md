@@ -10,7 +10,7 @@ Study title + body + CRUD parity (CloudKit-ready)
 
 ## Status
 
-In progress
+Complete
 
 ## Duration And Usage Tracking
 
@@ -18,8 +18,8 @@ In progress
 | --- | --- |
 | Planned start | 2026-06-05 |
 | Actual start | 2026-06-05 |
-| Actual end | — |
-| Elapsed | — |
+| Actual end | 2026-06-05 |
+| Elapsed | same day |
 | Scope class | Small |
 | Confidence | High |
 
@@ -27,22 +27,22 @@ In progress
 
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
-| `Study.title` is editable, defaults from the goal's first line on creation, and is shown in the list; detail edits title + goal. | Pending | |
-| Create / rename / delete work on macOS and iOS (build-verified on both). | Pending | |
-| `StudyDocument` round-trips title + model choices + run config; unit-tested (encode → decode preserves the fields). | Pending | |
-| The SwiftData `Study` model is CloudKit-compatible (optional/defaulted attributes, no unique constraints) — documented for M17. | Pending | |
-| New logic is test-first (mock, no GPU); UI verified by building both apps. | Pending | |
-| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Pending | |
+| `Study.title` is editable, defaults from the goal's first line on creation, and is shown in the list; detail edits title + goal. | Done | `Study.init`/`StudyConfig.defaultTitle`, `StudyRow`, `StudyDetailView` title field. |
+| Create / rename / delete work on macOS and iOS (build-verified on both). | Done | `StudiesView` new/delete/context-menu Rename; macOS + iOS BUILD SUCCEEDED. |
+| `StudyDocument` round-trips title + model choices + run config; unit-tested (encode → decode preserves the fields). | Done | `StudyConfig` + `StudyConfigTests` (round-trip, defaults, title rule); `StudyDocument` carries `StudyConfig`. |
+| The SwiftData `Study` model is CloudKit-compatible (optional/defaulted attributes, no unique constraints) — documented for M17. | Done | All attributes defaulted, `resultData` optional, no `.unique`/relationships; noted in closeout. |
+| New logic is test-first (mock, no GPU); UI verified by building both apps. | Done | `StudyConfigTests` written before `StudyConfig`. |
+| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Done | `git grep "import MLX" -- '*.swift'` → only `AICoScientistMLX/`. |
 
 ## Validation Log
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `swift build` | — | |
-| `swift test` | — | |
-| macOS app build | — | |
-| iOS app build | — | |
-| `git diff --check` | — | |
+| `swift build` | Passed | Clean on Apple Silicon. |
+| `swift test` | Passed | 152 tests / 36 suites green (+4). |
+| macOS app build | Passed | `xcodebuild … CoScientistDemo` BUILD SUCCEEDED. |
+| iOS app build | Passed | `xcodebuild … CoScientistApp` BUILD SUCCEEDED. |
+| `git diff --check` | Passed | Whitespace clean. |
 
 ## Decisions
 
