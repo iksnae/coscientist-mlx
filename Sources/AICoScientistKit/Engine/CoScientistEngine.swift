@@ -147,7 +147,7 @@ public actor CoScientistEngine {
         metrics.agentExecutionTimes["total"] = seconds(since: start, clock: clock)
 
         return WorkflowResult(
-            topRankedHypotheses: Array(ranked.prefix(10)),
+            topRankedHypotheses: Array(ranked.prefix(max(1, config.resultLimit))),
             metaReviewSummary: metaSummary,
             clusters: clusters,
             metrics: metrics,
@@ -206,7 +206,7 @@ public actor CoScientistEngine {
     private func tournamentPhase(goal: String) async {
         guard hypotheses.count >= 2 else { return }
         let agent = TournamentAgent()
-        let rounds = hypotheses.count * 3
+        let rounds = hypotheses.count * max(1, config.tournamentRoundsPerHypothesis)
         for round in 0..<rounds {
             if Task.isCancelled { break }
             let (i, j) = pickTwoDistinct(in: hypotheses.count)

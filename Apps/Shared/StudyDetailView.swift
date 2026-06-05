@@ -116,7 +116,7 @@ struct StudyDetailView: View {
                 Stepper("Hypotheses: \(study.hypothesesPerGeneration)",
                     value: $study.hypothesesPerGeneration, in: 2...12).disabled(live).fixedSize()
                 Stepper("Iterations: \(study.iterations)",
-                    value: $study.iterations, in: 1...4).disabled(live).fixedSize()
+                    value: $study.iterations, in: 1...8).disabled(live).fixedSize()
             }
 
             DisclosureGroup("Advanced") {
@@ -125,9 +125,10 @@ struct StudyDetailView: View {
                         value: $study.evolutionTopK, in: 1...12).disabled(live).fixedSize()
                     Text("How many top hypotheses continue after each refinement round.")
                         .font(.caption).foregroundStyle(.secondary)
-                    Stepper("Tournament size: \(study.tournamentSize)",
-                        value: $study.tournamentSize, in: 2...16).disabled(live).fixedSize()
-                    Text("How many hypotheses compete in the ranking tournament.")
+                    Stepper("Tournament rounds per hypothesis: \(study.tournamentRounds)",
+                        value: $study.tournamentRounds, in: 1...6).disabled(live).fixedSize()
+                    Text("Pairwise matches per hypothesis that set the Elo ranking "
+                        + "(total matches = pool size × this).")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 .padding(.top, 4)

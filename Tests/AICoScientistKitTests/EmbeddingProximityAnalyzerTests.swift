@@ -45,7 +45,7 @@ struct EmbeddingProximityAnalyzerTests {
         let embedder = MockEmbeddingModel(vectors: ["Hypothesis Alpha": [1, 0], "Hypothesis Beta": [1, 0]])
         let engine = CoScientistEngine(
             decoder: SchemaConstrainedDecoder(model: model),
-            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 2),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, evolutionTopK: 2),
             seed: 1,
             proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder, threshold: 0.9)
         )

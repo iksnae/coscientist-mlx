@@ -71,7 +71,7 @@ struct EngineTests {
         CoScientistEngine(
             decoder: SchemaConstrainedDecoder(model: model),
             config: .init(maxIterations: 1, hypothesesPerGeneration: 2,
-                          tournamentSize: 2, evolutionTopK: 1),
+                          evolutionTopK: 1),
             seed: seed
         )
     }
@@ -129,7 +129,7 @@ struct EngineTests {
         let metrics = DecodeMetrics()
         let engine = CoScientistEngine(
             decoder: SchemaConstrainedDecoder(model: ScriptedModel(), metrics: metrics),
-            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, evolutionTopK: 1),
             seed: 3, decodeMetrics: metrics)
         let result = await engine.run(researchGoal: "g")
         #expect(result.metrics.repairAttempts == 0)
@@ -149,7 +149,7 @@ struct EngineTests {
             ])
         let engine = CoScientistEngine(
             router: router,
-            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, evolutionTopK: 1),
             seed: 9)
         _ = await engine.run(researchGoal: "g")
 
@@ -219,7 +219,7 @@ struct EngineTests {
         let transcript = Transcript()
         let engine = CoScientistEngine(
             decoder: SchemaConstrainedDecoder(model: ScriptedModel(), transcript: transcript),
-            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, evolutionTopK: 1),
             seed: 5, transcript: transcript)
         let result = await engine.run(researchGoal: "g")
         #expect(!result.transcript.isEmpty)
@@ -231,7 +231,7 @@ struct EngineTests {
         let metrics = DecodeMetrics()
         let engine = CoScientistEngine(
             decoder: SchemaConstrainedDecoder(model: BrokenModel(), metrics: metrics),
-            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, tournamentSize: 2, evolutionTopK: 1),
+            config: .init(maxIterations: 1, hypothesesPerGeneration: 2, evolutionTopK: 1),
             seed: 3, decodeMetrics: metrics)
         let result = await engine.run(researchGoal: "g")
         #expect(result.metrics.decodeFailures > 0)

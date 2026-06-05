@@ -138,7 +138,7 @@ final class WorkflowRunner {
                 config: .init(
                     maxIterations: study.iterations,
                     hypothesesPerGeneration: study.hypothesesPerGeneration,
-                    tournamentSize: study.tournamentSize,
+                    tournamentRoundsPerHypothesis: study.tournamentRounds,
                     evolutionTopK: study.evolutionTopK),
                 proximityAnalyzer: EmbeddingProximityAnalyzer(model: embedder),
                 decodeMetrics: decodeMetrics)
