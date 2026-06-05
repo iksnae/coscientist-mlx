@@ -29,19 +29,16 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-A user-layer control-flow + UX overhaul is drafted (mac first, then iOS),
-driven by the vendored Swift UI/UX skills:
+The mac UX overhaul shipped: **M13** (model selection control-flow) and
+**M14** (run config + results outcome). Plus a fix: run errors are now
+persisted + surfaced (no more silent failures, PR #49).
 
-- **M13 — Model selection control-flow (macOS)** —
-  `docs/MILESTONE-13-PLANNING-DRAFT.md`. Per-study Generator + Reviewer
-  (each on-device | hosted); install-aware pickers; Settings = providers +
-  downloads. Next to grind.
-- **M14 — Run config + results outcome (macOS)** — expose hidden engine
-  params + a results header that states the conclusion. *(draft)*
-- **M15 — iOS** — port the redesign + iPad-adaptive layout + on-device
-  hardening (absorbs the earlier iPad-polish scope). *(draft)*
-- Candidate themes (see `docs/ROADMAP.md`): parity-test harness, native
-  Foundation Models tool calling.
+- **M15 — iOS** — `docs/MILESTONE-15-PLAN.md` (Ready). Port the M13/M14
+  redesign to iPhone, iPad-adaptive layout, and on-device memory/thermal
+  hardening (absorbs the earlier iPad-polish scope). Finishes the iOS arc.
+- Candidate themes (see `docs/ROADMAP.md`): **model registry sync**
+  (operator idea — updatable model index hosted on the repo/Pages),
+  parity-test harness, native Foundation Models tool calling.
 
 ## Pointers
 
