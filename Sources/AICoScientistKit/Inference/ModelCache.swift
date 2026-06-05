@@ -4,9 +4,10 @@ import Foundation
 /// downloaded (so the UI can skip the "download" disclosure), report sizes, and clear models
 /// to reclaim disk. Pure Foundation; `huggingFaceCacheURL` is overridable for tests.
 public enum ModelCache {
-    /// The HF Hub cache root (`~/.cache/huggingface/hub`). Overridable in tests.
+    /// The HF Hub cache root (`<userBase>/.cache/huggingface/hub` — home on macOS, app docs on
+    /// iOS). Overridable in tests.
     public nonisolated(unsafe) static var huggingFaceCacheURL: URL =
-        FileManager.default.homeDirectoryForCurrentUser
+        PlatformPaths.userBase
         .appendingPathComponent(".cache/huggingface/hub", isDirectory: true)
 
     public struct DownloadedModel: Sendable, Equatable {

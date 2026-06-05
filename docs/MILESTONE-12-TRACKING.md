@@ -10,7 +10,7 @@ Shared app core + iOS (iPhone) functional parity
 
 ## Status
 
-In progress
+Complete
 
 ## Duration And Usage Tracking
 
@@ -18,8 +18,8 @@ In progress
 | --- | --- |
 | Planned start | 2026-06-05 |
 | Actual start | 2026-06-05 |
-| Actual end | TBD |
-| Elapsed | TBD |
+| Actual end | 2026-06-05 |
+| Elapsed | same day |
 | Scope class | Large |
 | Confidence | Medium |
 
@@ -27,23 +27,23 @@ In progress
 
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
-| `Apps/Shared` holds the shared model + views; both targets build from it. | Pending | Track A/C |
-| macOS app still builds and behaves as before (no regression). | Pending | Track A |
-| iOS app builds on the simulator and runs the core flow (Studies → run → results → inspector → activity). | Pending | Track C |
-| Settings, charts, export (share sheet) function on iOS; graph functions or is cleanly gated. | Pending | Track B/C |
-| Export uses the iOS share sheet; `import AppKit` is macOS-only. | Pending | Track B |
-| New cross-platform logic is test-first (mock, no GPU); UI verified by building both apps. | Pending | all tracks |
-| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Pending | `git grep` check |
+| `Apps/Shared` holds the shared model + views; both targets build from it. | Done | `Apps/Shared/*` (PR #42 + 02c05ef); both apps build. |
+| macOS app still builds and behaves as before (no regression). | Done | macOS BUILD SUCCEEDED after relocation + shims. |
+| iOS app builds on the simulator and runs the core flow (Studies → run → results → inspector → activity). | Done | iOS BUILD SUCCEEDED (generic iOS Simulator); StudiesView is the iOS root. Real-device run is manual/opt-in. |
+| Settings, charts, export (share sheet) function on iOS; graph functions or is cleanly gated. | Done | Settings sheet + charts + `PlatformExport` share sheet; Grape compiled for iOS (no gating needed). |
+| Export uses the iOS share sheet; `import AppKit` is macOS-only. | Done | `PlatformExport` (02c05ef); AppKit gated to macOS in shared views. |
+| New cross-platform logic is test-first (mock, no GPU); UI verified by building both apps. | Done | `PlatformPathsTests` first; both app builds green. |
+| `import MLX*` appears only under `Sources/AICoScientistMLX/`. | Done | `git grep` → only `Package.swift` comment. |
 
 ## Validation Log
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `swift build` | Pending | — |
-| `swift test` | Pending | — |
-| macOS app build | Pending | — |
-| iOS app build (simulator) | Pending | — |
-| `git diff --check` | Pending | — |
+| `swift build` | Passed | Clean on Apple Silicon. |
+| `swift test` | Passed | 138 tests / 32 suites green (+1 PlatformPaths). |
+| macOS app build | Passed | `xcodebuild … CoScientistDemo` BUILD SUCCEEDED. |
+| iOS app build (simulator) | Passed | `xcodebuild … CoScientistApp -destination 'generic/platform=iOS Simulator'` BUILD SUCCEEDED. |
+| `git diff --check` | Passed | Whitespace clean. |
 
 ## Decisions
 

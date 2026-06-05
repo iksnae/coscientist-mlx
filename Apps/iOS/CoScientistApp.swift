@@ -1,10 +1,12 @@
+import SwiftData
 import SwiftUI
 
 @main
 struct CoScientistApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            StudiesView()
         }
+        .modelContainer(for: Study.self)
     }
 }

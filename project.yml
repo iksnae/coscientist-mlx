@@ -30,6 +30,7 @@ targets:
     platform: iOS
     deploymentTarget: "17.0"
     sources:
+      - Apps/Shared
       - Apps/iOS
     settings:
       base:
@@ -44,6 +45,12 @@ targets:
         product: AICoScientistKit
       - package: coscientist-mlx
         product: AICoScientistMLX
+      - package: coscientist-mlx
+        product: AICoScientistRemote
+      - package: coscientist-mlx
+        product: AICoScientistFoundationModels
+      - package: Grape
+        product: Grape
 
   CoScientistDemo:
     # macOS playground; depends on Remote too for the in-app hybrid judge.

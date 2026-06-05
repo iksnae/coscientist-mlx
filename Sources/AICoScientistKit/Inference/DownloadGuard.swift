@@ -3,9 +3,9 @@ import Foundation
 /// Free space on a volume. Separated from the guard so the decision logic stays pure/testable.
 public enum DiskSpace {
     /// Bytes available for "important" usage (what the OS will actually let an app use) on the
-    /// volume backing `url` (defaults to the home directory).
+    /// volume backing `url` (defaults to the per-user base — home on macOS, app docs on iOS).
     public static func availableBytes(
-        at url: URL = FileManager.default.homeDirectoryForCurrentUser
+        at url: URL = PlatformPaths.userBase
     ) -> Int64 {
         let values = try? url.resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
         return values?.volumeAvailableCapacityForImportantUsage ?? 0
