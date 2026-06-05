@@ -10,7 +10,7 @@ Provider model loading + Settings state cleanup
 
 ## Status
 
-In progress
+Complete
 
 ## Duration And Usage Tracking
 
@@ -18,8 +18,8 @@ In progress
 | --- | --- |
 | Planned start | 2026-06-05 |
 | Actual start | 2026-06-05 |
-| Actual end | — |
-| Elapsed | — |
+| Actual end | 2026-06-05 |
+| Elapsed | same day |
 | Scope class | Small–Medium |
 | Confidence | High |
 
@@ -27,23 +27,23 @@ In progress
 
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
-| Hosted models appear in the Study pickers on a fresh launch with a provider configured (no manual refresh). | Pending | |
-| The configured model is always offered pre-fetch; the cached list survives relaunch. | Pending | |
-| `SettingsStore` no longer declares `backend`, `agentModels`, `roleBackends`, presets, `generatorKey`, `remoteEnabled`; their UserDefaults keys are cleared on launch. | Pending | |
-| `downloadPlan(for:)` uses `study.generator`. | Pending | |
-| New logic is test-first (mock, no GPU); the pure `HostedModels` resolver is unit-tested. | Pending | |
-| `swift build` clean; `swift test` green; macOS + iOS apps build. | Pending | |
-| `import MLX*` only under `Sources/AICoScientistMLX/`. | Pending | |
+| Hosted models appear in the Study pickers on a fresh launch with a provider configured (no manual refresh). | Done | `ModelChoicePicker` `.task { ensureModelsLoaded() }` + `hostedModelOptions`; both apps build. |
+| The configured model is always offered pre-fetch; the cached list survives relaunch. | Done | `HostedModels.options` includes configured model; `fetchedModels` persisted to UserDefaults. |
+| `SettingsStore` no longer declares `backend`, `agentModels`, `roleBackends`, presets, `generatorKey`, `remoteEnabled`; their UserDefaults keys are cleared on launch. | Done | Rewritten `SettingsStore`; `migrateRemovingDeadKeys()`. |
+| `downloadPlan(for:)` uses `study.generator`. | Done | `WorkflowRunner.downloadPlan` evaluates the selected `ModelChoice`. |
+| New logic is test-first (mock, no GPU); the pure `HostedModels` resolver is unit-tested. | Done | `HostedModelsTests` (5) written before impl. |
+| `swift build` clean; `swift test` green; macOS + iOS apps build. | Done | 157 tests / 37 suites; both BUILD SUCCEEDED. |
+| `import MLX*` only under `Sources/AICoScientistMLX/`. | Done | `git grep` → only the `Package.swift` comment. |
 
 ## Validation Log
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `swift build` | — | |
-| `swift test` | — | |
-| macOS app build | — | |
-| iOS app build | — | |
-| `git diff --check` | — | |
+| `swift build` | Passed | Clean. |
+| `swift test` | Passed | 157 tests / 37 suites (+5). |
+| macOS app build | Passed | `CoScientistDemo` BUILD SUCCEEDED. |
+| iOS app build | Passed | `CoScientistApp` BUILD SUCCEEDED. |
+| `git diff --check` | Passed | Clean. |
 
 ## Decisions
 

@@ -17,6 +17,13 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
+- **M20 — Provider model loading + Settings state cleanup.** Hosted models
+  auto-load + cache so they appear in the Study pickers at launch (pure
+  `HostedModels` Kit resolver; no manual refresh); deleted dead
+  `SettingsStore` state + cleared stale UserDefaults; dropped `remoteEnabled`;
+  `downloadPlan` uses the selected generator. 157 tests / 37 suites; macOS +
+  iOS build. See `docs/MILESTONE-20-CLOSEOUT.md`. (Xcode Cloud pipeline also
+  brought green — see the `xcode-cloud` skill.)
 - **M18 — Distributed cross-device compute (feasibility spike).** Verdict:
   no first-party iCloud compute-sharing API; layer-split distributed
   inference impractical on iOS; **recommend local-network offload** (Mac
@@ -51,12 +58,16 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-M16 (study title/CRUD), M17 (iCloud sync), and the M18 distributed-compute
-spike shipped. The spike's recommended follow-on is next:
+M16/M17, the M18 spike, and **M20** (provider loading + state cleanup)
+shipped. Now a **UX-quality arc**:
 
-- **M19 — LAN model offload** — Mac runs an OpenAI-compatible endpoint; the
-  iPhone/iPad offload study inference via `RemoteLanguageModel` over
-  Bonjour/`NetworkBrowser` (reuses the M7 seam). `docs/MILESTONE-19-PLANNING-DRAFT.md`. *(draft, next to grind)*
+- **M21 — Professional UI redesign** — main study view, sidebar, pickers,
+  results (differentiated titles, selected-model in pickers, non-duplicated
+  conclusion, plain status, hierarchy) via the SwiftUI design skills.
+  `docs/MILESTONE-21-PLANNING-DRAFT.md`. *(draft, next to grind)*
+- **M19 — LAN model offload** — Mac OpenAI-compatible endpoint + iPhone/iPad
+  offload via `RemoteLanguageModel` over Bonjour (M7 seam). *(parked behind
+  the UX arc)*
 - **Operator-pending:** live two-device sync verification for M17 (needs
   two iCloud-signed devices) — not reproducible headlessly.
 - Candidate themes (see `docs/ROADMAP.md`): multi-indicator run progress,

@@ -116,6 +116,15 @@ at planning time.
   embedded; live two-device sync is the one operator-pending check. Adds
   `ci_post_clone.sh` for Xcode Cloud (public deps, no auth). See
   `docs/MILESTONE-17-CLOSEOUT.md`.
+- **M20 — Provider model loading + Settings state cleanup.** Hosted models
+  now auto-load + cache so they appear in the Study pickers at launch (pure
+  `HostedModels` Kit resolver; no manual refresh); deleted dead
+  `SettingsStore` state (`backend`/`agentModels`/`roleBackends`/presets/
+  `generatorKey`) + cleared stale UserDefaults; dropped `remoteEnabled`;
+  `downloadPlan` uses the selected generator. See
+  `docs/MILESTONE-20-CLOSEOUT.md`. (Xcode Cloud build pipeline also brought
+  green — xcodegen-from-GitHub, shared schemes, macro trust; see the
+  `xcode-cloud` skill.)
 - **M18 — Distributed cross-device compute (feasibility spike).** Found
   **no first-party iCloud compute-sharing API** and that layer-split
   distributed inference is impractical on iOS; recommends **local-network
@@ -140,14 +149,18 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The studies + sync arc (M16 title/CRUD, M17 iCloud sync) and the M18
-distributed-compute spike are done. The spike's recommended follow-on is
-next:
+The studies + sync arc (M16/M17), the M18 spike, and **M20** (provider
+loading + state cleanup) are done. Now a **UX-quality arc**:
 
+- **M21 — Professional UI redesign.** Main study view, sidebar, pickers,
+  results: differentiated titles, selected-model shown in pickers,
+  non-duplicated conclusion, plain-language status, coherent hierarchy.
+  Applies the SwiftUI design skills. `docs/MILESTONE-21-PLANNING-DRAFT.md`.
+  *(draft, next to grind)*
 - **M19 — LAN model offload.** A Mac runs an OpenAI-compatible endpoint;
   the iPhone/iPad offload study inference to it via `RemoteLanguageModel`
-  (M7 seam), discovered over Bonjour/`NetworkBrowser`. The realistic
-  "harness Apple Silicon across my devices." *(draft, next to grind)*
+  (M7 seam), discovered over Bonjour/`NetworkBrowser`. *(draft, parked
+  behind the UX arc)*
 
 Candidate themes (not yet drafted):
 
