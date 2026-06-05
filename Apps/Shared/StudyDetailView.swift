@@ -176,7 +176,8 @@ struct StudyDetailView: View {
                 runButton
                 if let download = runner.downloadProgress, live {
                     ProgressView(value: download).frame(width: 120)
-                    Text("downloading \(Int(download * 100))%").font(.caption).foregroundStyle(.secondary)
+                    Text("\(runner.downloadingNeeded ? "Downloading" : "Loading") model — \(Int(download * 100))%")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
                 Menu("Export") {

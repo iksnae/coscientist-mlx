@@ -72,7 +72,18 @@ final class SettingsStore {
         fetchedModels = defaults.stringArray(forKey: "fetchedModels") ?? []
         migrateRemovingDeadKeys()
         applyHFToken()
+        applyModelCacheLocation()
         booted = true
+    }
+
+    /// Point the Hugging Face downloader at the exact directory `ModelCache` inspects, so a
+    /// downloaded model is detected as cached on every platform. `HF_HUB_CACHE` is the
+    /// downloader's highest-priority cache setting; without this, the library's default sandbox
+    /// location on iOS differs from `ModelCache`'s path, so every run wrongly re-prompts to
+    /// download. (On macOS this resolves to the same `~/.cache/huggingface/hub`, so nothing
+    /// changes and existing downloads stay found.)
+    private func applyModelCacheLocation() {
+        setenv("HF_HUB_CACHE", ModelCache.huggingFaceCacheURL.path, 1)
     }
 
     /// One-time cleanup of UserDefaults keys for state removed in M20 (legacy global generator,
