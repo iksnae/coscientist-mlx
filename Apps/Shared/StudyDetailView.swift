@@ -16,6 +16,24 @@ struct StudyDetailView: View {
     @State private var confirm: ConfirmDownload?
     @State private var diskError: String?
     @State private var topHypothesisExpanded = false
+    @State private var configExpanded = false
+
+    /// Show the full run config when explicitly expanded, or for a fresh draft (no results yet,
+    /// not running). Once a study has results or is running, collapse to a summary so the Study
+    /// data (conclusion + hypotheses) leads.
+    private var showFullConfig: Bool { configExpanded || (study.snapshot == nil && !live) }
+
+    private func choiceShortName(_ choice: ModelChoice) -> String {
+        switch choice {
+        case .onDevice(let key): ModelCatalog.model(key: key)?.displayName ?? key
+        case .hosted(let id): id
+        }
+    }
+
+    private var configSummary: String {
+        "\(choiceShortName(study.generator)) · \(study.hypothesesPerGeneration) hypotheses "
+            + "· \(study.iterations) iterations"
+    }
 
     private enum ResultTab: String, CaseIterable {
         case hypotheses = "Hypotheses", graph = "Graph", charts = "Charts", activity = "Activity"
@@ -45,6 +63,7 @@ struct StudyDetailView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onChange(of: live) { _, isLive in if isLive { resultTab = .activity } }
+        .onChange(of: study.id) { _, _ in configExpanded = false; topHypothesisExpanded = false }
         .alert("Not enough disk", isPresented: .constant(diskError != nil), presenting: diskError) { _ in
             Button("OK") { diskError = nil }
         } message: { Text($0) }
@@ -139,37 +158,59 @@ struct StudyDetailView: View {
                     }
                 }
 
-            ModelChoicePicker(title: "Generator", choice: $study.generator, store: settings)
-                .disabled(live)
-            ModelChoicePicker(title: "Reviewer", choice: $study.reviewer, store: settings)
-                .disabled(live)
+            if showFullConfig {
+                ModelChoicePicker(title: "Generator", choice: $study.generator, store: settings)
+                    .disabled(live)
+                ModelChoicePicker(title: "Reviewer", choice: $study.reviewer, store: settings)
+                    .disabled(live)
 
-            HStack(spacing: 16) {
-                Stepper("Hypotheses: \(study.hypothesesPerGeneration)",
-                    value: $study.hypothesesPerGeneration, in: 2...12).disabled(live).fixedSize()
-                Stepper("Iterations: \(study.iterations)",
-                    value: $study.iterations, in: 1...8).disabled(live).fixedSize()
-            }
+                HStack(spacing: 16) {
+                    Stepper("Hypotheses: \(study.hypothesesPerGeneration)",
+                        value: $study.hypothesesPerGeneration, in: 2...12).disabled(live).fixedSize()
+                    Stepper("Iterations: \(study.iterations)",
+                        value: $study.iterations, in: 1...8).disabled(live).fixedSize()
+                }
 
-            DisclosureGroup("Advanced") {
-                VStack(alignment: .leading, spacing: 8) {
-                    Stepper("Survivors per round: \(study.evolutionTopK)",
-                        value: $study.evolutionTopK, in: 1...12).disabled(live).fixedSize()
-                    Text("How many top hypotheses continue after each refinement round.")
-                        .font(.caption).foregroundStyle(.secondary)
-                    Stepper("Tournament rounds per hypothesis: \(study.tournamentRounds)",
-                        value: $study.tournamentRounds, in: 1...6).disabled(live).fixedSize()
-                    Text("Pairwise matches per hypothesis that set the Elo ranking "
-                        + "(total matches = pool size × this).")
+                DisclosureGroup("Advanced") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Stepper("Survivors per round: \(study.evolutionTopK)",
+                            value: $study.evolutionTopK, in: 1...12).disabled(live).fixedSize()
+                        Text("How many top hypotheses continue after each refinement round.")
+                            .font(.caption).foregroundStyle(.secondary)
+                        Stepper("Tournament rounds per hypothesis: \(study.tournamentRounds)",
+                            value: $study.tournamentRounds, in: 1...6).disabled(live).fixedSize()
+                        Text("Pairwise matches per hypothesis that set the Elo ranking "
+                            + "(total matches = pool size × this).")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 4)
+                }
+
+                if !settings.remoteReady {
+                    Text("Models run on-device. Add a hosted provider in Settings ▸ Providers to "
+                        + "use a hosted model for the generator or reviewer.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
-                .padding(.top, 4)
-            }
 
-            if !settings.remoteReady {
-                Text("Models run on-device. Add a hosted provider in Settings ▸ Providers to use "
-                    + "a hosted model for the generator or reviewer.")
+                // Collapse affordance only matters once there are results to prioritize.
+                if study.snapshot != nil && !live {
+                    Button { withAnimation { configExpanded = false } } label: {
+                        Label("Hide configuration", systemImage: "chevron.up")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.plain).foregroundStyle(.tint)
+                }
+            } else {
+                Button { withAnimation { configExpanded = true } } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "slider.horizontal.3")
+                        Text(configSummary).lineLimit(1).truncationMode(.tail)
+                        Spacer(minLength: 6)
+                        Text("Edit"); Image(systemName: "chevron.down")
+                    }
                     .font(.caption).foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain).disabled(live)
             }
 
             HStack(spacing: 12) {
@@ -189,7 +230,7 @@ struct StudyDetailView: View {
             }
 
             if live {
-                liveProgress
+                RunProgressView(runner: runner)
             } else {
                 Text(statusLine).font(.callout).foregroundStyle(.secondary)
             }
@@ -210,24 +251,6 @@ struct StudyDetailView: View {
                     .buttonStyle(.borderedProminent)
                     .disabled(study.goal.isEmpty || runner.running)
             }
-        }
-    }
-
-    @ViewBuilder private var liveProgress: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                if !runner.phase.isEmpty {
-                    Text(runner.phase.uppercased())
-                        .font(.caption2.bold().monospaced())
-                        .padding(.horizontal, 8).padding(.vertical, 3)
-                        .background(.tint.opacity(0.15), in: Capsule()).foregroundStyle(.tint)
-                }
-                if !runner.detail.isEmpty {
-                    Text(runner.detail).font(.caption).foregroundStyle(.secondary)
-                }
-            }
-            if let fraction = runner.phaseFraction { ProgressView(value: fraction) }
-            Text(runner.status).font(.caption).foregroundStyle(.secondary)
         }
     }
 
