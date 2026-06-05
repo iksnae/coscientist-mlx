@@ -4,38 +4,36 @@ import AICoScientistRemote
 import Foundation
 import Observation
 
-/// Shared, persisted configuration for providers and models, stored in UserDefaults.
+/// Shared, persisted configuration for the hosted provider and the on-device embedder, stored in
+/// UserDefaults.
+///
+/// Per-study model selection (Generator/Reviewer) lives on the `Study` as `ModelChoice` and is
+/// routed by `StudyRouting`; this store no longer carries the legacy global generator/backend/
+/// per-agent-backing state (removed in M20).
 ///
 /// Note: the API key and HF token are stored in UserDefaults (plaintext in the app's
-/// preferences), not the Keychain. This is a deliberate trade-off for this local,
-/// unsandboxed, ad-hoc-signed demo: the legacy Keychain prompts for access on every launch
-/// when the binary has no stable code-signing identity. The HF token is exported to the
-/// environment so the Hugging Face downloader picks it up for gated repos.
+/// preferences), not the Keychain — a deliberate trade-off for this local, unsandboxed,
+/// ad-hoc-signed demo (the legacy Keychain prompts for access on every launch when the binary
+/// has no stable code-signing identity). The HF token is exported to the environment so the
+/// Hugging Face downloader picks it up for gated repos.
 @MainActor
 @Observable
 final class SettingsStore {
     static let shared = SettingsStore()
 
     private let defaults = UserDefaults.standard
+    /// Gates didSet side-effects during init (so loading the cache isn't clobbered).
+    private var booted = false
 
-    var generatorKey: String { didSet { defaults.set(generatorKey, forKey: "generatorKey") } }
     var embedderKey: String { didSet { defaults.set(embedderKey, forKey: "embedderKey") } }
-    /// Generator backend: MLX (default) or Apple Foundation Models (where available).
-    var backend: InferenceBackend { didSet { defaults.set(backend.rawValue, forKey: "backend") } }
-    var remoteEnabled: Bool { didSet { defaults.set(remoteEnabled, forKey: "remoteEnabled") } }
-    var remoteBaseURL: String { didSet { defaults.set(remoteBaseURL, forKey: "remoteBaseURL") } }
+    var remoteBaseURL: String {
+        didSet { defaults.set(remoteBaseURL, forKey: "remoteBaseURL"); invalidateModelCache() }
+    }
     var remoteModel: String { didSet { defaults.set(remoteModel, forKey: "remoteModel") } }
 
-    /// Per-role hosted-model assignments (role rawValue → model id). A role absent here runs
-    /// on the local model. Persisted as a plist dictionary.
-    var agentModels: [String: String] { didSet { defaults.set(agentModels, forKey: "agentModels") } }
-
-    /// Models discovered from the provider (`RemoteModels.list`), in-memory only.
-    var fetchedModels: [String] = []
-    var isFetchingModels = false
-    var modelsError: String?
-
-    var openAIKey: String { didSet { defaults.set(openAIKey, forKey: "openAIKey") } }
+    var openAIKey: String {
+        didSet { defaults.set(openAIKey, forKey: "openAIKey"); invalidateModelCache() }
+    }
     var hfToken: String {
         didSet {
             defaults.set(hfToken, forKey: "hfToken")
@@ -43,60 +41,66 @@ final class SettingsStore {
         }
     }
 
-    /// Whether a usable remote judge is configured.
-    var remoteReady: Bool { remoteEnabled && !openAIKey.isEmpty && !remoteModel.isEmpty }
+    /// Models discovered from the provider (`RemoteModels.list`), cached across launches so the
+    /// pickers populate immediately without a manual refresh.
+    var fetchedModels: [String] = [] {
+        didSet { defaults.set(fetchedModels, forKey: "fetchedModels") }
+    }
+    var isFetchingModels = false
+    var modelsError: String?
+    private var autoLoadAttempted = false
+
+    /// Whether a usable hosted provider is configured (base URL + key + model present).
+    var remoteReady: Bool {
+        !openAIKey.isEmpty && !remoteModel.isEmpty && URL(string: remoteBaseURL) != nil
+    }
 
     /// Whether Apple Foundation Models is usable on this device right now.
     var foundationAvailable: Bool { FoundationModelsBackend.isAvailable }
 
+    /// Hosted model ids for the pickers — configured-first, de-duplicated, ready-gated.
+    var hostedModelOptions: [String] {
+        HostedModels.options(ready: remoteReady, configured: remoteModel, fetched: fetchedModels)
+    }
+
     private init() {
-        generatorKey = defaults.string(forKey: "generatorKey") ?? ModelCatalog.defaultGeneratorKey
         embedderKey = defaults.string(forKey: "embedderKey") ?? ModelCatalog.defaultEmbedderKey
-        backend = InferenceBackend(rawValue: defaults.string(forKey: "backend") ?? "") ?? .mlx
-        agentModels = defaults.dictionary(forKey: "agentModels") as? [String: String] ?? [:]
-        remoteEnabled = defaults.bool(forKey: "remoteEnabled")
         remoteBaseURL = defaults.string(forKey: "remoteBaseURL") ?? "https://api.openai.com/v1"
         remoteModel = defaults.string(forKey: "remoteModel") ?? "gpt-4o"
         openAIKey = defaults.string(forKey: "openAIKey") ?? ""
         hfToken = defaults.string(forKey: "hfToken") ?? ""
+        fetchedModels = defaults.stringArray(forKey: "fetchedModels") ?? []
+        migrateRemovingDeadKeys()
         applyHFToken()
+        booted = true
     }
 
-    /// Per-role backends for the engine. Only when a remote is usable; otherwise empty so
-    /// every role stays local (local-first).
-    var roleBackends: [AgentRole: RoleBackend] {
-        guard remoteReady else { return [:] }
-        var result: [AgentRole: RoleBackend] = [:]
-        for (raw, id) in agentModels {
-            if let role = AgentRole(rawValue: raw), !id.isEmpty { result[role] = .remote(id) }
-        }
-        return result
-    }
-
-    /// Assign (or clear, with nil) a hosted model for one role.
-    func assign(_ role: AgentRole, to id: String?) {
-        if let id, !id.isEmpty { agentModels[role.rawValue] = id }
-        else { agentModels.removeValue(forKey: role.rawValue) }
-    }
-
-    /// One-tap backing presets over the configured `remoteModel`.
-    enum BackingPreset { case allLocal, hostedJudge, hostedAll }
-    func applyPreset(_ preset: BackingPreset) {
-        switch preset {
-        case .allLocal:
-            agentModels = [:]
-        case .hostedJudge:
-            agentModels = [
-                AgentRole.reflection.rawValue: remoteModel,
-                AgentRole.tournament.rawValue: remoteModel,
-            ]
-        case .hostedAll:
-            agentModels = Dictionary(
-                uniqueKeysWithValues: AgentRole.allCases.map { ($0.rawValue, remoteModel) })
+    /// One-time cleanup of UserDefaults keys for state removed in M20 (legacy global generator,
+    /// backend, per-agent backings, the hosted-enable toggle) so stale values don't linger.
+    private func migrateRemovingDeadKeys() {
+        for key in ["generatorKey", "backend", "agentModels", "roleBackends", "remoteEnabled"] {
+            defaults.removeObject(forKey: key)
         }
     }
 
-    /// Fetch the provider's model list into `fetchedModels` (for the pickers).
+    /// Provider identity changed → drop the cached list so it re-loads for the new provider.
+    private func invalidateModelCache() {
+        guard booted else { return }
+        fetchedModels = []
+        modelsError = nil
+        autoLoadAttempted = false
+    }
+
+    /// Background-load the provider's model list once, when ready and not yet loaded. Safe to
+    /// call from a view `.task`; it no-ops if a cache exists, a fetch is in flight, or already
+    /// attempted for the current provider.
+    func ensureModelsLoaded() async {
+        guard remoteReady, fetchedModels.isEmpty, !isFetchingModels, !autoLoadAttempted else { return }
+        autoLoadAttempted = true
+        await refreshModels()
+    }
+
+    /// Fetch the provider's model list into `fetchedModels` (also caches it).
     func refreshModels() async {
         guard let url = URL(string: remoteBaseURL), !openAIKey.isEmpty else {
             modelsError = "Set the base URL and API key first."

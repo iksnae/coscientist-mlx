@@ -31,9 +31,10 @@ struct ModelChoicePicker: View {
                         Button { choice = .onDevice(model.key) } label: { Text(itemLabel(model)) }
                     }
                 }
-                if store.remoteReady, !store.fetchedModels.isEmpty {
+                let hosted = store.hostedModelOptions
+                if !hosted.isEmpty {
                     Section("Hosted") {
-                        ForEach(store.fetchedModels, id: \.self) { id in
+                        ForEach(hosted, id: \.self) { id in
                             Button { choice = .hosted(id) } label: { Text(id) }
                         }
                     }
@@ -43,6 +44,7 @@ struct ModelChoicePicker: View {
             }
             if let caption { Text(caption).font(.caption).foregroundStyle(.secondary) }
         }
+        .task { await store.ensureModelsLoaded() }
     }
 
     private var currentTitle: String {
