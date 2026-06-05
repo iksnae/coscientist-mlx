@@ -105,8 +105,15 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The 2026-06-04 batch (M6–M11) is fully delivered. Run `milestone-planner`
-to scope the next arc.
+The 2026-06-04 batch (M6–M11) is fully delivered. The **iOS arc**
+(M12–M13) is drafted next (`milestone-planner`, 2026-06-05):
+
+- **M12 — Shared app core + iOS (iPhone) functional parity.** Extract the
+  cross-platform model + views into `Apps/Shared`; iPhone demo with
+  Studies, run, results + inspector, activity, Settings, graph, charts,
+  export. *(draft, next to grind)*
+- **M13 — iOS polish.** iPad-adaptive layout + on-device memory/thermal
+  hardening. *(draft)*
 
 Candidate themes (not yet drafted):
 
@@ -114,8 +121,6 @@ Candidate themes (not yet drafted):
   port and the Python reference; compare structure/quality.
 - **Native Foundation Models tool calling.** Bridge `AgentTool` →
   FM `Tool` (carry-forward from M10; today FM uses the M6 text loop).
-- **iOS parity.** Inspector + activity feed + backend selection on iOS
-  (carry-forward from M8–M10, macOS-first).
 - *(Add new themes here as the vision evolves.)*
 
 ## How the loop works
