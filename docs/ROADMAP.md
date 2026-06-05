@@ -103,6 +103,12 @@ at planning time.
   inspector + on-device memory/thermal hardening (`RunGuard`). See
   `docs/MILESTONE-15-CLOSEOUT.md`. (Plus fixes: persisted/surfaced run
   errors, and a real tournament-rounds control.)
+- **M16 — Study title + body + CRUD parity (CloudKit-ready).** Editable
+  `Study.title` (defaults from the goal's first line, independent after),
+  shown in the list + a context-menu rename; a pure `StudyConfig` (Kit)
+  drives a faithful `StudyDocument` round-trip (title + model choices +
+  run config), unit-tested; the SwiftData model verified CloudKit-ready.
+  See `docs/MILESTONE-16-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -121,12 +127,10 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The UX overhaul (M13–M15) is delivered. Next: a **studies + sync arc**
+The UX overhaul (M13–M15) is delivered and **M16** (study title/CRUD +
+CloudKit-ready model) has landed. Next in the **studies + sync arc**
 (`milestone-planner`, 2026-06-05):
 
-- **M16 — Study title + body + CRUD parity.** Editable title distinct from
-  the goal/body; full create/rename/delete on both apps; faithful
-  `StudyDocument` round-trip; CloudKit-ready model. *(draft, next to grind)*
 - **M17 — iCloud sync (SwiftData + CloudKit).** Studies sync across the
   user's devices via the private CloudKit DB. Requires real team signing
   (team `G98TZJ75HL`, per the Khaos Machine distro) + an iCloud container.

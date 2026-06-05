@@ -14,12 +14,18 @@ struct StudiesView: View {
     @State private var selection: Study?
     @State private var runner = WorkflowRunner()
     @State private var showSettings = false
+    @State private var renaming: Study?
+    @State private var renameText = ""
 
     var body: some View {
         NavigationSplitView {
             List(selection: $selection) {
                 ForEach(studies) { study in
                     StudyRow(study: study, running: runner.isRunning(study)).tag(study)
+                        .contextMenu {
+                            Button("Rename") { beginRename(study) }
+                            Button("Delete", role: .destructive) { deleteStudy(study) }
+                        }
                 }
                 .onDelete(perform: delete)
             }
@@ -57,6 +63,15 @@ struct StudiesView: View {
                 #endif
             }
         }
+        .alert("Rename study", isPresented: .constant(renaming != nil), presenting: renaming) { study in
+            TextField("Title", text: $renameText)
+            Button("Cancel", role: .cancel) { renaming = nil }
+            Button("Save") {
+                let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { study.title = trimmed; study.updatedAt = Date(); try? context.save() }
+                renaming = nil
+            }
+        }
         #if os(iOS)
             .sheet(isPresented: $showSettings) {
                 NavigationStack {
@@ -79,15 +94,21 @@ struct StudiesView: View {
     }
 
     private func delete(at offsets: IndexSet) {
-        for index in offsets {
-            let study = studies[index]
-            if selection == study { selection = nil }
-            context.delete(study)
-        }
+        for index in offsets { deleteStudy(studies[index]) }
+    }
+
+    private func deleteStudy(_ study: Study) {
+        if selection == study { selection = nil }
+        context.delete(study)
+    }
+
+    private func beginRename(_ study: Study) {
+        renameText = study.title
+        renaming = study
     }
 
     private func export(_ study: Study) {
-        PlatformExport.save(suggestedName: "\(study.goal.prefix(40)).coscientist") { url in
+        PlatformExport.save(suggestedName: "\(study.title.prefix(40)).coscientist") { url in
             try JSONEncoder().encode(StudyDocument(study)).write(to: url)
         }
     }
@@ -116,7 +137,7 @@ private struct StudyRow: View {
         HStack(spacing: 8) {
             statusDot
             VStack(alignment: .leading, spacing: 1) {
-                Text(study.goal.isEmpty ? "Untitled study" : study.goal)
+                Text(study.title.isEmpty ? "Untitled study" : study.title)
                     .lineLimit(1)
                 Text(study.updatedAt, format: .relative(presentation: .named))
                     .font(.caption2).foregroundStyle(.secondary)

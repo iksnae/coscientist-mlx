@@ -104,8 +104,12 @@ struct StudyDetailView: View {
 
     private var configHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
+            TextField("Title", text: $study.title)
+                .font(.title2.weight(.semibold)).textFieldStyle(.plain).disabled(live)
+                .onChange(of: study.title) { _, _ in study.updatedAt = Date(); try? context.save() }
             TextField("Research goal", text: $study.goal, axis: .vertical)
-                .font(.title3).textFieldStyle(.plain).lineLimit(1...3).disabled(live)
+                .font(.callout).foregroundStyle(.secondary)
+                .textFieldStyle(.plain).lineLimit(1...3).disabled(live)
 
             ModelChoicePicker(title: "Generator", choice: $study.generator, store: settings)
                 .disabled(live)
@@ -162,7 +166,7 @@ struct StudyDetailView: View {
             }
         }
         .padding()
-        .onChange(of: study.goal) { _, _ in try? context.save() }
+        .onChange(of: study.goal) { _, _ in study.updatedAt = Date(); try? context.save() }
     }
 
     private var runButton: some View {
@@ -455,7 +459,7 @@ struct StudyDetailView: View {
 
     private func export(_ ext: String) {
         guard let snapshot = study.snapshot else { return }
-        PlatformExport.save(suggestedName: "\(study.goal.prefix(40)).\(ext)") { url in
+        PlatformExport.save(suggestedName: "\(study.title.prefix(40)).\(ext)") { url in
             switch ext {
             case "md": try snapshot.markdown().write(to: url, atomically: true, encoding: .utf8)
             case "csv": try snapshot.csv().write(to: url, atomically: true, encoding: .utf8)

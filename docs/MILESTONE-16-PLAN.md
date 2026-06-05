@@ -1,4 +1,4 @@
-# Milestone 16 Planning Draft
+# Milestone 16 Plan
 
 Date: 2026-06-05
 
@@ -10,7 +10,7 @@ Study title + body + CRUD parity (CloudKit-ready)
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-16-PLAN.md.
+Ready.
 
 ## Goal
 
@@ -59,7 +59,23 @@ Expected behavior:
   goal, generator/reviewer choices, and run config (survivors, tournament
   rounds, iterations, hypotheses).
 
-## Primary Scope
+## Primary Scope (Execution Order)
+
+1. **Track B first (pure, testable).** Extract a pure `StudyConfig` value
+   type into `AICoScientistKit` carrying the full portable config (title,
+   goal, generator/reviewer `ModelChoice`, hypothesesPerGeneration,
+   iterations, evolutionTopK, tournamentRounds, useRemoteJudge), `Codable`
+   with tolerant field defaults. Failing test first
+   (`StudyConfigTests`: encode → decode preserves every field; a legacy
+   JSON missing the new fields decodes with sane defaults). Then rewire
+   `StudyDocument` to carry `StudyConfig` + `snapshot`, with a legacy
+   flat-document decode fallback, and map `Study` ⇄ `StudyConfig`.
+2. **Track A (UI/CRUD).** `Study.title` first-class + default from the
+   goal's first line on creation; `StudyRow` shows the title;
+   `StudyDetailView` edits title + goal (autosave); list context-menu
+   rename. Verify create/rename/delete on both apps.
+3. Build macOS + iOS; `swift build` + `swift test` green;
+   `git diff --check` clean; closeout + tracking land with the final commit.
 
 ### Track A — Title/body model + CRUD (Apps/Shared)
 
@@ -98,13 +114,17 @@ Extend `StudyDocument` to carry title + generator/reviewer (`ModelChoice`)
 - iOS study import via document picker (still macOS-only; separate
   follow-up).
 
-## Open Questions
+## Resolved Decisions
 
-- **Title default.** Derive from the first line of the goal vs a generic
-  "New study" until edited. Lean: default to the goal's first line, stay
-  independent after.
-- **List rename.** Inline rename in the sidebar vs only via the detail
-  title field. Lean: detail field now; context-menu rename if cheap.
+- **Title default.** Decided: on creation, derive the title from the
+  goal's first line (trimmed); it stays independent thereafter (editing
+  the goal does not overwrite an existing title).
+- **List rename.** Decided: rename via the detail title field, **and** a
+  list context-menu "Rename" affordance (cheap — a focused title field /
+  inline alert), on both apps.
+- **Document format.** Decided: `StudyDocument` carries a nested
+  `StudyConfig` + `snapshot`, with a tolerant decode that falls back to
+  the legacy flat fields so older `.coscientist` files still import.
 
 ## Risk
 

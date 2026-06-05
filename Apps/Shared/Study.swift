@@ -33,12 +33,35 @@ final class Study {
 
     init(goal: String) {
         self.goal = goal
-        self.title = goal.isEmpty ? "New study" : goal
+        self.title = StudyConfig.defaultTitle(forGoal: goal)
     }
 
     var status: StudyStatus {
         get { StudyStatus(rawValue: statusRaw) ?? .draft }
         set { statusRaw = newValue.rawValue }
+    }
+
+    /// The portable, persistence-free configuration — the bridge to `StudyConfig` (Kit) for
+    /// export/import. Reading projects the stored fields; writing applies a config back.
+    var config: StudyConfig {
+        get {
+            StudyConfig(
+                title: title, goal: goal, generator: generator, reviewer: reviewer,
+                hypothesesPerGeneration: hypothesesPerGeneration, iterations: iterations,
+                evolutionTopK: evolutionTopK, tournamentRounds: tournamentRounds,
+                useRemoteJudge: useRemoteJudge)
+        }
+        set {
+            title = newValue.title
+            goal = newValue.goal
+            generator = newValue.generator
+            reviewer = newValue.reviewer
+            hypothesesPerGeneration = newValue.hypothesesPerGeneration
+            iterations = newValue.iterations
+            evolutionTopK = newValue.evolutionTopK
+            tournamentRounds = newValue.tournamentRounds
+            useRemoteJudge = newValue.useRemoteJudge
+        }
     }
 
     /// The model that generates + evolves + ranks + meta-reviews hypotheses.
@@ -60,32 +83,43 @@ final class Study {
     }
 }
 
-/// Portable representation of a study for `.coscientist` export/import (Hybrid sharing).
+/// Portable representation of a study for `.coscientist` export/import (Hybrid sharing). Carries
+/// the full `StudyConfig` (title, model choices, run config) plus the latest run snapshot.
+/// Decoding is tolerant: it reads the nested `config`, falling back to the legacy flat layout so
+/// older `.coscientist` files still import.
 struct StudyDocument: Codable {
-    var goal: String
-    var generatorKey: String
-    var hypothesesPerGeneration: Int
-    var iterations: Int
-    var useRemoteJudge: Bool
+    var config: StudyConfig
     var snapshot: RunSnapshot?
 
     init(_ study: Study) {
-        goal = study.goal
-        generatorKey = study.generatorKey
-        hypothesesPerGeneration = study.hypothesesPerGeneration
-        iterations = study.iterations
-        useRemoteJudge = study.useRemoteJudge
+        config = study.config
         snapshot = study.snapshot
     }
 
     func makeStudy() -> Study {
-        let study = Study(goal: goal)
-        study.generatorKey = generatorKey
-        study.hypothesesPerGeneration = hypothesesPerGeneration
-        study.iterations = iterations
-        study.useRemoteJudge = useRemoteJudge
+        let study = Study(goal: config.goal)
+        study.config = config
         study.snapshot = snapshot
         study.status = snapshot == nil ? .draft : .done
         return study
+    }
+
+    private enum CodingKeys: String, CodingKey { case config, snapshot }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        snapshot = try container.decodeIfPresent(RunSnapshot.self, forKey: .snapshot)
+        if let nested = try container.decodeIfPresent(StudyConfig.self, forKey: .config) {
+            config = nested
+        } else {
+            // Legacy flat document: StudyConfig's tolerant decoder reads the shared top-level keys.
+            config = try StudyConfig(from: decoder)
+        }
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(config, forKey: .config)
+        try container.encodeIfPresent(snapshot, forKey: .snapshot)
     }
 }
