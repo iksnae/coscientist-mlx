@@ -10,7 +10,10 @@ import SwiftUI
 /// import/export of studies as `.coscientist` files.
 struct StudiesView: View {
     @Environment(\.modelContext) private var context
-    @Query(sort: \Study.updatedAt, order: .reverse) private var studies: [Study]
+    // Sort by a STABLE key (creation time), not updatedAt: title/goal edits bump updatedAt on
+    // every keystroke, and sorting by it made the row re-sort to the top mid-edit — the selected
+    // study jumped under the cursor. updatedAt still drives the "x ago" subtitle.
+    @Query(sort: \Study.createdAt, order: .reverse) private var studies: [Study]
     @State private var selection: Study?
     @State private var runner = WorkflowRunner()
     @State private var showSettings = false
