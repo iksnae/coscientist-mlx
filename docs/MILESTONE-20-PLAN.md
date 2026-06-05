@@ -1,4 +1,4 @@
-# Milestone 20 Planning Draft
+# Milestone 20 Plan
 
 Date: 2026-06-05
 
@@ -10,7 +10,7 @@ Provider model loading + Settings state cleanup
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-20-PLAN.md.
+Ready.
 
 ## Goal
 
@@ -130,15 +130,20 @@ Expected behavior:
 - Re-architecting `SettingsStore` persistence (still UserDefaults; only
   field set changes).
 
-## Open Questions
+## Resolved Decisions
 
-- **[?]** Cache freshness: re-fetch on every app launch in the background,
-  or only when fields change / cache is older than N. Lean: refresh on
-  provider-field change + a background refresh when ready and the cache is
-  empty; show cached immediately.
-- **[?]** Where the pure resolver lives: a small type in `AICoScientistKit`
-  vs a testable static on `SettingsStore`. Lean: Kit (keeps it mock-testable
-  and UI-free).
+- **Cache freshness.** Decided: show the cached list immediately; trigger a
+  background refresh when the provider is ready and the cache is empty, and
+  on provider-field change. No blocking fetch.
+- **Resolver location.** Decided: a pure `HostedModels` helper in
+  `AICoScientistKit` (UI-free, mock-testable).
+- **Field deletions confirmed safe** by reference scan: `backend`,
+  `roleBackends`, `applyPreset`/`BackingPreset` have no readers outside
+  `SettingsStore`; `remoteEnabled` only in `SettingsView`; the CLI's
+  `agentModels` is an unrelated local. `study.generatorKey` (the SwiftData
+  field) stays for now (schema change is out of scope); only
+  `SettingsStore.generatorKey` is removed and `downloadPlan` switches to
+  `study.generator`.
 
 ## Risk
 
