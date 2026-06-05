@@ -85,6 +85,24 @@ final class WorkflowRunner {
             let generatorChoice = sanitize(study.generator)
             let reviewerChoice = sanitize(study.reviewer)
 
+            // On-device safety (iOS): cap the GPU buffer cache + block a doomed run on low memory.
+            #if os(iOS)
+                MLXRuntime.setGPUCacheLimit(bytes: 24 * 1024 * 1024)
+                if case .onDevice(let key) = generatorChoice,
+                    let model = ModelCatalog.model(key: key) {
+                    let freeMB = Int(os_proc_available_memory() / (1024 * 1024))
+                    if RunGuard.memory(freeMB: freeMB, modelApproxGB: model.approxSizeGB) == .block {
+                        status = "Not enough free memory for \(model.displayName) "
+                            + "(~\(freeMB) MB free). Pick a smaller model or close other apps."
+                        study.status = .error
+                        study.updatedAt = Date()
+                        try? context.save()
+                        if runningStudyID == id { runningStudyID = nil }
+                        return
+                    }
+                }
+            #endif
+
             // Pre-load each distinct on-device model (async), cached by key.
             var onDevice: [String: any SchemaConstrainedDecoding] = [:]
             func ensureOnDevice(_ key: String) async throws {
@@ -185,5 +203,16 @@ final class WorkflowRunner {
                     avgElo: Double(elos.reduce(0, +)) / Double(elos.count),
                     poolSize: elos.count))
         }
+
+        // Mid-run thermal safety: stop cleanly (via the cancel path) on critical thermal state.
+        let thermal: DeviceThermalState
+        switch ProcessInfo.processInfo.thermalState {
+        case .nominal: thermal = .nominal
+        case .fair: thermal = .fair
+        case .serious: thermal = .serious
+        case .critical: thermal = .critical
+        @unknown default: thermal = .nominal
+        }
+        if RunGuard.thermal(thermal) == .stop { cancel() }
     }
 }

@@ -230,20 +230,47 @@ struct StudyDetailView: View {
         return HypothesisDetail(h)
     }
 
-    /// Main results content beside a trailing hypothesis inspector when something is selected.
+    private var inspectorItem: Binding<HypothesisDetail?> {
+        Binding(get: { selectedDetail }, set: { if $0 == nil { selectedID = nil } })
+    }
+
+    #if os(iOS)
+        @Environment(\.horizontalSizeClass) private var sizeClass
+        private var isCompact: Bool { sizeClass == .compact }
+    #else
+        private var isCompact: Bool { false }
+    #endif
+
+    /// Results content + the hypothesis inspector. On regular width (iPad/macOS) the inspector
+    /// is a trailing pane; on compact width (iPhone) it's a sheet so the list stays full-width.
     @ViewBuilder private func inspectorSplit<Content: View>(
         @ViewBuilder _ content: () -> Content
     ) -> some View {
-        HStack(spacing: 0) {
+        if isCompact {
             content()
-            if let detail = selectedDetail {
-                Divider()
-                HypothesisInspector(detail: detail)
-                    .frame(width: 320)
-                    .transition(.move(edge: .trailing))
+                .sheet(item: inspectorItem) { detail in
+                    NavigationStack {
+                        HypothesisInspector(detail: detail)
+                            .navigationTitle("Hypothesis")
+                            .toolbar {
+                                ToolbarItem(placement: .confirmationAction) {
+                                    Button("Done") { selectedID = nil }
+                                }
+                            }
+                    }
+                }
+        } else {
+            HStack(spacing: 0) {
+                content()
+                if let detail = selectedDetail {
+                    Divider()
+                    HypothesisInspector(detail: detail)
+                        .frame(width: 320)
+                        .transition(.move(edge: .trailing))
+                }
             }
+            .animation(.default, value: selectedID)
         }
-        .animation(.default, value: selectedID)
     }
 
     @ViewBuilder private var hypothesesList: some View {
