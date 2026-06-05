@@ -17,6 +17,9 @@ final class Study {
     var generatorKey: String = ModelCatalog.defaultGeneratorKey
     var hypothesesPerGeneration: Int = 4
     var iterations: Int = 1
+    // M14: advanced run config (defaults match EngineConfiguration).
+    var evolutionTopK: Int = 3      // survivors kept after each refinement round
+    var tournamentSize: Int = 8     // hypotheses entered into the ranking tournament
     var useRemoteJudge: Bool = false
     // M13: per-study model selection (kind + id; computed `generator`/`reviewer` below).
     var generatorChoiceKind: String = "onDevice"
