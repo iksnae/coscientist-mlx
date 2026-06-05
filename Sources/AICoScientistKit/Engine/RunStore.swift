@@ -10,6 +10,9 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
     public var metaReviewSummary: String
     /// The run's activity feed (M9). Optional on the wire — legacy snapshots decode to `[]`.
     public var activity: [ActivityEvent]
+    /// Errors recorded during the run (agent/decode failures the engine kept going past).
+    /// Persisted so a run that produced nothing isn't a silent failure. Optional on the wire.
+    public var errors: [String]
 
     public init(
         researchGoal: String,
@@ -17,7 +20,8 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
         metrics: ExecutionMetrics,
         clusters: [SimilarityCluster],
         metaReviewSummary: String,
-        activity: [ActivityEvent] = []
+        activity: [ActivityEvent] = [],
+        errors: [String] = []
     ) {
         self.researchGoal = researchGoal
         self.hypotheses = hypotheses
@@ -25,6 +29,7 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
         self.clusters = clusters
         self.metaReviewSummary = metaReviewSummary
         self.activity = activity
+        self.errors = errors
     }
 
     /// Build a snapshot from a completed workflow result.
@@ -34,15 +39,16 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
             hypotheses: result.topRankedHypotheses,
             metrics: result.metrics,
             clusters: result.clusters,
-            metaReviewSummary: result.metaReviewSummary
+            metaReviewSummary: result.metaReviewSummary,
+            errors: result.errors
         )
     }
 
     private enum CodingKeys: String, CodingKey {
-        case researchGoal, hypotheses, metrics, clusters, metaReviewSummary, activity
+        case researchGoal, hypotheses, metrics, clusters, metaReviewSummary, activity, errors
     }
 
-    /// Decode tolerantly: `activity` was added in M9, so older snapshots omit it.
+    /// Decode tolerantly: `activity`/`errors` were added later, so older snapshots omit them.
     public init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         researchGoal = try c.decode(String.self, forKey: .researchGoal)
@@ -51,6 +57,7 @@ public struct RunSnapshot: Codable, Sendable, Equatable {
         clusters = try c.decode([SimilarityCluster].self, forKey: .clusters)
         metaReviewSummary = try c.decode(String.self, forKey: .metaReviewSummary)
         activity = try c.decodeIfPresent([ActivityEvent].self, forKey: .activity) ?? []
+        errors = try c.decodeIfPresent([String].self, forKey: .errors) ?? []
     }
 
     /// A human-readable Markdown report of the run (for sharing / export).

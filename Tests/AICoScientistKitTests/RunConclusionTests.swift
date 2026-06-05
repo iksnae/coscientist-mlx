@@ -1,8 +1,25 @@
+import Foundation
 import Testing
 @testable import AICoScientistKit
 
 @Suite("Run conclusion")
 struct RunConclusionTests {
+
+    @Test("Snapshot persists errors; a legacy snapshot without them decodes to empty")
+    func errorsPersist() throws {
+        let snap = RunSnapshot(
+            researchGoal: "g", hypotheses: [], metrics: ExecutionMetrics(),
+            clusters: [], metaReviewSummary: "", errors: ["generation: boom"])
+        let decoded = try JSONDecoder().decode(
+            RunSnapshot.self, from: JSONEncoder().encode(snap))
+        #expect(decoded.errors == ["generation: boom"])
+
+        var object = try JSONSerialization.jsonObject(
+            with: JSONEncoder().encode(snap)) as! [String: Any]
+        object.removeValue(forKey: "errors")
+        let legacy = try JSONSerialization.data(withJSONObject: object)
+        #expect(try JSONDecoder().decode(RunSnapshot.self, from: legacy).errors.isEmpty)
+    }
 
     @Test("Conclusion surfaces the top hypothesis + synthesis")
     func conclusion() {
