@@ -124,7 +124,7 @@ private struct ProvidersSettings: View {
                     Text(error).font(.caption).foregroundStyle(.red)
                 }
                 Text("OpenAI-compatible. Generation, evolution, and embeddings stay on-device "
-                    + "unless you back those agents below; the key is stored in your Keychain.")
+                    + "unless you back those agents below; the key is stored locally in app preferences.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
@@ -151,7 +151,7 @@ private struct ProvidersSettings: View {
 
             Section("Hugging Face") {
                 SecureField("Access token (optional)", text: $store.hfToken)
-                Text("Needed only for gated/private repos; stored in your Keychain. "
+                Text("Needed only for gated/private repos; stored locally in app preferences. "
                     + "Sign in with Hugging Face (OAuth) is coming soon.")
                     .font(.caption).foregroundStyle(.secondary)
             }

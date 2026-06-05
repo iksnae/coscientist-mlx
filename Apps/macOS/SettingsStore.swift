@@ -4,9 +4,13 @@ import AICoScientistRemote
 import Foundation
 import Observation
 
-/// Shared, persisted configuration for providers and models. Non-secrets live in
-/// UserDefaults; secrets (API key, HF token) live in the Keychain. The HF token is exported
-/// to the environment so the Hugging Face downloader picks it up for gated repos.
+/// Shared, persisted configuration for providers and models, stored in UserDefaults.
+///
+/// Note: the API key and HF token are stored in UserDefaults (plaintext in the app's
+/// preferences), not the Keychain. This is a deliberate trade-off for this local,
+/// unsandboxed, ad-hoc-signed demo: the legacy Keychain prompts for access on every launch
+/// when the binary has no stable code-signing identity. The HF token is exported to the
+/// environment so the Hugging Face downloader picks it up for gated repos.
 @MainActor
 @Observable
 final class SettingsStore {
@@ -31,10 +35,10 @@ final class SettingsStore {
     var isFetchingModels = false
     var modelsError: String?
 
-    var openAIKey: String { didSet { Keychain.set(openAIKey, for: "openai") } }
+    var openAIKey: String { didSet { defaults.set(openAIKey, forKey: "openAIKey") } }
     var hfToken: String {
         didSet {
-            Keychain.set(hfToken, for: "huggingface")
+            defaults.set(hfToken, forKey: "hfToken")
             applyHFToken()
         }
     }
@@ -53,8 +57,8 @@ final class SettingsStore {
         remoteEnabled = defaults.bool(forKey: "remoteEnabled")
         remoteBaseURL = defaults.string(forKey: "remoteBaseURL") ?? "https://api.openai.com/v1"
         remoteModel = defaults.string(forKey: "remoteModel") ?? "gpt-4o"
-        openAIKey = Keychain.get("openai")
-        hfToken = Keychain.get("huggingface")
+        openAIKey = defaults.string(forKey: "openAIKey") ?? ""
+        hfToken = defaults.string(forKey: "hfToken") ?? ""
         applyHFToken()
     }
 
