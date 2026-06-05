@@ -64,7 +64,9 @@ private struct ScriptedProximityModel: LanguageModel {
             return #"{"hypotheses":[{"text":"Hypothesis Alpha","justification":"j"},{"text":"Hypothesis Beta","justification":"j"}]}"#
         }
         if system.contains("Hypothesis Reflection Agent") {
-            return #"{"scores":{"scientificSoundness":0.8,"novelty":0.7,"relevance":0.75,"testability":0.9,"clarity":0.8,"impact":0.6},"reviewSummary":"ok","safetyEthicalConcerns":"None identified","strengths":[],"weaknesses":[],"suggestions":[]}"#
+            // Batched reflection returns one review per hypothesis; the engine applies prefix(poolSize).
+            let review = #"{"scores":{"scientificSoundness":0.8,"novelty":0.7,"relevance":0.75,"testability":0.9,"clarity":0.8,"impact":0.6},"reviewSummary":"ok","safetyEthicalConcerns":"None identified","strengths":[],"weaknesses":[],"suggestions":[]}"#
+            return #"{"reviews":[\#(review),\#(review),\#(review),\#(review)]}"#
         }
         if system.contains("Hypothesis Evolution Agent") {
             // Keep the text stable across evolution so the embedding mock still matches.
