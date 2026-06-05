@@ -28,7 +28,10 @@ struct ModelChoicePicker: View {
             Menu {
                 Section("On-device") {
                     ForEach(generators) { model in
-                        Button { choice = .onDevice(model.key) } label: { Text(itemLabel(model)) }
+                        Button { choice = .onDevice(model.key) } label: {
+                            Text(itemLabel(model))
+                            Text(model.strengths)   // shown as the menu item's secondary line
+                        }
                     }
                 }
                 let hosted = store.hostedModelOptions
@@ -40,13 +43,21 @@ struct ModelChoicePicker: View {
                     }
                 }
             } label: {
-                LabeledContent(title) { Text(currentTitle) }
+                HStack(spacing: 6) {
+                    Text(title).foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Text(currentTitle).fontWeight(.medium).lineLimit(1)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
             }
-            if let caption { Text(caption).font(.caption).foregroundStyle(.secondary) }
+            .menuStyle(.borderlessButton)
+            if let caption { Text(caption).font(.caption).foregroundStyle(.secondary).lineLimit(2) }
         }
         .task { await store.ensureModelsLoaded() }
     }
 
+    /// The selected model's short name shown inline in the control.
     private var currentTitle: String {
         switch choice {
         case .onDevice(let key): ModelCatalog.model(key: key)?.displayName ?? key
@@ -61,6 +72,8 @@ struct ModelChoicePicker: View {
         return "\(mark)\(model.displayName) · \(model.tier) · ~\(sizeGB(model))\(unfit)"
     }
 
+    /// One concise line about the *current* choice (the full strengths blurb lives in the menu
+    /// items, so it isn't repeated verbatim under every picker).
     private var caption: String? {
         switch choice {
         case .onDevice(let key):
@@ -69,13 +82,13 @@ struct ModelChoicePicker: View {
                 ? "downloaded" : "downloads ~\(sizeGB(model))"
             let fit =
                 switch model.fit(deviceRAMGB: deviceRAMGB) {
-                case .comfortable: "fits this Mac comfortably"
-                case .tight: "fits (tight on RAM)"
-                case .insufficient: "may not fit (\(model.minRAMGB) GB recommended)"
+                case .comfortable: "fits comfortably"
+                case .tight: "tight on RAM"
+                case .insufficient: "needs \(model.minRAMGB) GB"
                 }
-            return "\(model.strengths) — \(fit), \(install)."
-        case .hosted(let id):
-            return "Hosted model \(id) — runs via your provider; nothing downloads."
+            return "On-device · \(fit) · \(install)"
+        case .hosted:
+            return "Hosted · runs via your provider; nothing downloads"
         }
     }
 

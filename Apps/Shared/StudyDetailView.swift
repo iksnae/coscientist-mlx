@@ -15,6 +15,7 @@ struct StudyDetailView: View {
     @State private var selectedID: Hypothesis.ID?
     @State private var confirm: ConfirmDownload?
     @State private var diskError: String?
+    @State private var topHypothesisExpanded = false
 
     private enum ResultTab: String, CaseIterable {
         case hypotheses = "Hypotheses", graph = "Graph", charts = "Charts", activity = "Activity"
@@ -52,27 +53,40 @@ struct StudyDetailView: View {
 
     // MARK: Outcome
 
-    /// Leads with the conclusion when a finished study has results.
+    /// Leads with the conclusion when a finished study has results: a synthesis headline, then the
+    /// top hypothesis truncated (expandable) so it isn't a verbatim copy of the first ranked row.
     @ViewBuilder private var outcomeHeader: some View {
         if !live, let conclusion = study.snapshot?.conclusion, conclusion.hasResult,
             let top = conclusion.topHypothesis {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
                     Text("Conclusion").font(.headline)
+                    Spacer()
                     if let elo = conclusion.topElo {
                         Text("top Elo \(elo)").font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
                 }
-                Text(top).font(.title3.weight(.semibold)).textSelection(.enabled)
+                // Synthesis leads (the understanding across hypotheses); falls back to the top
+                // hypothesis only when there's no separate synthesis.
+                Text(conclusion.synthesis.isEmpty ? top : conclusion.synthesis)
+                    .font(.title3.weight(.semibold)).textSelection(.enabled)
+
                 if !conclusion.synthesis.isEmpty {
-                    Text(conclusion.synthesis).font(.callout).foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("TOP HYPOTHESIS").font(.caption2.bold()).foregroundStyle(.secondary)
+                        Text(top).font(.callout).foregroundStyle(.secondary)
+                            .lineLimit(topHypothesisExpanded ? nil : 3).textSelection(.enabled)
+                        Button(topHypothesisExpanded ? "Show less" : "Show more") {
+                            withAnimation { topHypothesisExpanded.toggle() }
+                        }
+                        .font(.caption).buttonStyle(.plain).foregroundStyle(.tint)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal).padding(.vertical, 10)
+            .padding(.horizontal).padding(.vertical, 12)
             .background(.green.opacity(0.06))
         }
     }
@@ -82,7 +96,7 @@ struct StudyDetailView: View {
         if !live, let errors = study.snapshot?.errors, !errors.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Label(
-                    "\(errors.count) issue\(errors.count == 1 ? "" : "s") during the run",
+                    "\(RunStatusText.count(errors.count, "issue", "issues")) during the run",
                     systemImage: "exclamationmark.triangle.fill")
                     .font(.subheadline.bold()).foregroundStyle(.orange)
                 ForEach(Array(errors.prefix(6).enumerated()), id: \.offset) { _, message in
@@ -104,12 +118,26 @@ struct StudyDetailView: View {
 
     private var configHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("Title", text: $study.title)
+            TextField("Untitled study", text: $study.title)
                 .font(.title2.weight(.semibold)).textFieldStyle(.plain).disabled(live)
-                .onChange(of: study.title) { _, _ in study.updatedAt = Date(); try? context.save() }
-            TextField("Research goal", text: $study.goal, axis: .vertical)
+                .onChange(of: study.title) { _, newTitle in
+                    // Mark the title custom once it diverges from what the goal would derive,
+                    // so it stops auto-tracking the goal.
+                    if newTitle != StudyConfig.defaultTitle(forGoal: study.goal) {
+                        study.titleIsCustom = true
+                    }
+                    study.updatedAt = Date(); try? context.save()
+                }
+            TextField("Research goal — what should the agents investigate?",
+                text: $study.goal, axis: .vertical)
                 .font(.callout).foregroundStyle(.secondary)
                 .textFieldStyle(.plain).lineLimit(1...3).disabled(live)
+                .onChange(of: study.goal) { _, newGoal in
+                    // Until the user names the study, the title follows the goal's first line.
+                    if !study.titleIsCustom {
+                        study.title = StudyConfig.defaultTitle(forGoal: newGoal)
+                    }
+                }
 
             ModelChoicePicker(title: "Generator", choice: $study.generator, store: settings)
                 .disabled(live)
@@ -205,8 +233,9 @@ struct StudyDetailView: View {
     private var statusLine: String {
         switch study.status {
         case .done:
-            return "Done · \(hypotheses.count) hypotheses · "
-                + "\(metrics.repairAttempts) repairs · \(metrics.decodeFailures) decode failures"
+            return RunStatusText.finished(
+                hypotheses: hypotheses.count, repairs: metrics.repairAttempts,
+                decodeFailures: metrics.decodeFailures)
         case .error: return "Last run errored."
         case .running: return "Running…"
         case .draft: return "Draft. Configure and run."

@@ -88,7 +88,9 @@ struct StudiesView: View {
     }
 
     private func newStudy() {
-        let study = Study(goal: "New research goal")
+        // Seed an empty goal so the title tracks what the user types (the sidebar shows real
+        // goals instead of a row of identical "New research goal" seeds).
+        let study = Study(goal: "")
         context.insert(study)
         selection = study
     }
