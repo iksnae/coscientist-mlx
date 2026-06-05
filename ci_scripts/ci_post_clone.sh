@@ -12,11 +12,20 @@
 # no .netrc, and no SSH keys.
 set -e
 
+# Homebrew isn't always on PATH inside Xcode Cloud's ci_* scripts; add both Apple-silicon
+# and Intel locations so `brew` and brew-installed tools resolve.
+export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
+export HOMEBREW_NO_INSTALL_CLEANUP=1
+export HOMEBREW_NO_AUTO_UPDATE=1
+
 echo "ci_post_clone: installing xcodegen"
 brew install xcodegen
 
 echo "ci_post_clone: generating CoScientist.xcodeproj from project.yml"
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 xcodegen generate
+
+echo "ci_post_clone: generated; shared schemes:"
+ls CoScientist.xcodeproj/xcshareddata/xcschemes/ || echo "WARNING: no shared schemes generated"
 
 echo "ci_post_clone: done"

@@ -32,6 +32,10 @@ targets:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
+    # Shared scheme so Xcode Cloud (which regenerates this gitignored project via
+    # ci_post_clone) has a scheme to build. Without this, xcodegen emits no shared scheme.
+    scheme:
+      testTargets: []
     sources:
       - Apps/Shared
       - Apps/iOS
@@ -63,6 +67,9 @@ targets:
     type: application
     platform: macOS
     deploymentTarget: "14.0"
+    # Shared scheme for Xcode Cloud (see CoScientistApp note).
+    scheme:
+      testTargets: []
     sources:
       - Apps/Shared
       - Apps/macOS
