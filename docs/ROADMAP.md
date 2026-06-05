@@ -109,11 +109,20 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The 2026-06-04 batch (M6–M11) and **M12 (iOS iPhone parity)** are
-delivered. The iOS arc continues:
+M6–M12 are delivered. Next: a **user-layer control-flow + UX overhaul**
+(`milestone-planner`, 2026-06-05) — the foundation is strong but model
+switching, run config, and results clarity are scattered/hidden. Driven by
+the vendored Swift UI/UX skills:
 
-- **M13 — iOS polish.** iPad-adaptive multi-column layout + on-device
-  memory/thermal hardening. *(in flight — `MILESTONE-13-PLAN.md`)*
+- **M13 — Model selection control-flow (macOS).** One mental model:
+  per-study Generator + Reviewer, each {on-device | hosted}; install-aware
+  pickers; Settings shrinks to providers + downloads. *(draft, next to grind)*
+- **M14 — Run config + results outcome (macOS).** Expose the hidden engine
+  params (survivors/evolutionTopK, tournament size, tool steps) in an
+  Advanced section; a results header that states the conclusion. *(draft)*
+- **M15 — iOS.** Port the redesign to iPhone, iPad-adaptive layout, and
+  on-device memory/thermal hardening (absorbs the earlier iPad-polish
+  scope). *(draft)*
 
 Candidate themes (not yet drafted):
 
