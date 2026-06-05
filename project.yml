@@ -51,6 +51,7 @@ targets:
     platform: macOS
     deploymentTarget: "14.0"
     sources:
+      - Apps/Shared
       - Apps/macOS
     settings:
       base:
