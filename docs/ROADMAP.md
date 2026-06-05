@@ -21,8 +21,9 @@ feature PRs rather than numbered milestones. The milestone loop
 (`milestone-planner` → `milestone-grinder`) is now in use: **M6** (agent
 tool-use loop), **M7** (hosted per-agent backing), and **M8** (hypothesis
 selection + inspector), **M9** (transparent activity), and **M10**
-(Foundation Models backend) have landed. The next numbered milestone is
-**M11**.
+(Foundation Models backend), and **M11** (batched reflection) have landed
+— the M6–M11 batch is complete. Run `milestone-planner` to scope the next
+arc.
 
 Agents can now ground hypothesis generation and reflection in real
 sources by calling research tools (arXiv, PubMed, web) through a
@@ -83,6 +84,9 @@ at planning time.
 - **M10 — Foundation Models backend.** Gated `AICoScientistFoundationModels`
   adapter (`LanguageModelSession`) + pure `InferenceBackend` resolver; CLI
   `--backend` + app picker. See `docs/MILESTONE-10-CLOSEOUT.md`.
+- **M11 — Batched reflection.** `BatchReflectionAgent` reviews the whole
+  pool in one decode (O(N)→1 reflection calls), backend-agnostic. Re-scoped
+  from cache-reuse/quant-tiers. See `docs/MILESTONE-11-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -101,17 +105,17 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-A batch of milestones is drafted and dependency-sequenced
-(`milestone-planner`, 2026-06-04; results-presentation UX pulled ahead of
-the Foundation Models + optimization work on operator signal):
+The 2026-06-04 batch (M6–M11) is fully delivered. Run `milestone-planner`
+to scope the next arc.
 
-- **M11 — Inference optimization.** Prompt/KV cache reuse + quant tiers.
-  *(draft, next to grind)*
-
-Further out (theme, not yet drafted):
+Candidate themes (not yet drafted):
 
 - **Parity test harness.** Run a fixed research goal through both this
   port and the Python reference; compare structure/quality.
+- **Native Foundation Models tool calling.** Bridge `AgentTool` →
+  FM `Tool` (carry-forward from M10; today FM uses the M6 text loop).
+- **iOS parity.** Inspector + activity feed + backend selection on iOS
+  (carry-forward from M8–M10, macOS-first).
 - *(Add new themes here as the vision evolves.)*
 
 ## How the loop works
