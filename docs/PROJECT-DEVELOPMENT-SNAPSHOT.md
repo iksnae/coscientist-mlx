@@ -4,7 +4,7 @@ A one-screen "where are we right now" pointer. `milestone-grinder`
 Phase 2 bumps this every cycle. Keep it short — detail lives in the
 linked docs.
 
-Snapshot date: 2026-06-04
+Snapshot date: 2026-06-05
 
 ## State
 
@@ -17,6 +17,16 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
+- **M16 — Study title + body + CRUD parity (CloudKit-ready).** Editable
+  `Study.title` (defaults from the goal's first line, independent after),
+  shown in the list + context-menu rename; a pure `StudyConfig` (Kit)
+  drives a faithful `StudyDocument` round-trip (title + model choices +
+  run config), unit-tested; SwiftData model verified CloudKit-ready. See
+  `docs/MILESTONE-16-CLOSEOUT.md`. 152 tests / 36 suites; macOS + iOS build.
+- **M13–M15 — UX overhaul + iOS.** Per-study Generator/Reviewer selection,
+  install/system-aware picker, Advanced run config, results-outcome header,
+  iPad-adaptive inspector + on-device hardening. (Plus fixes: surfaced run
+  errors, real tournament-rounds control.)
 - **M12 — Shared app core + iOS (iPhone) parity** (PRs #42, #43).
   Cross-platform model + views extracted to `Apps/Shared`; the full demo
   builds + runs on iOS (Studies, run, results + inspector, activity,
@@ -29,17 +39,14 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-The UX overhaul (M13–M15) shipped, plus fixes (persisted/surfaced run
-errors PR #49; real tournament-rounds control PR #51). Next: a **studies +
-sync arc** (drafted).
+The UX overhaul (M13–M15) and **M16** (study title/CRUD + CloudKit-ready
+model) shipped. Next in the **studies + sync arc** (drafted):
 
-- **M16 — Study title + body + CRUD parity** —
-  `docs/MILESTONE-16-PLANNING-DRAFT.md`. Editable title vs goal/body, CRUD
-  on both apps, faithful `StudyDocument` round-trip, CloudKit-ready model.
-  Next to grind.
 - **M17 — iCloud sync (SwiftData + CloudKit)** — private-DB sync across
   devices; needs real team signing (team `G98TZJ75HL`) + an iCloud
-  container. *(draft)*
+  container. **Has a hard external dependency** (the operator's Apple
+  Developer account / iCloud container at grind time) — left as a draft,
+  not yet promoted. *(draft, next to grind)*
 - **M18 — Distributed compute feasibility spike** — research + findings
   doc. *(draft)*
 - Candidate themes (see `docs/ROADMAP.md`): multi-indicator run progress,
