@@ -10,7 +10,14 @@ Run config + results outcome (macOS)
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-14-PLAN.md.
+Ready. Promoted from `docs/MILESTONE-14-PLANNING-DRAFT.md`.
+
+Resolved: expose raw values + sane defaults (no presets yet). Expose
+**survivors (evolutionTopK)** + **tournament size** in the app (both have a
+real run effect); **defer tool-steps** from the app UI — the app doesn't run
+the tool-use loop yet, so the control would be inert (carry-forward when
+tools are app-enabled). Empty meta-review ⇒ the outcome shows the top
+hypothesis alone.
 
 ## Goal
 

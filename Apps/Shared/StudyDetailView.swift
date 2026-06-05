@@ -33,6 +33,7 @@ struct StudyDetailView: View {
         VStack(spacing: 0) {
             configHeader
             Divider()
+            outcomeHeader
             Picker("View", selection: $resultTab) {
                 ForEach(ResultTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
@@ -46,6 +47,33 @@ struct StudyDetailView: View {
             Button("OK") { diskError = nil }
         } message: { Text($0) }
         .sheet(item: $confirm) { confirm in downloadSheet(confirm) }
+    }
+
+    // MARK: Outcome
+
+    /// Leads with the conclusion when a finished study has results.
+    @ViewBuilder private var outcomeHeader: some View {
+        if !live, let conclusion = study.snapshot?.conclusion, conclusion.hasResult,
+            let top = conclusion.topHypothesis {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
+                    Text("Conclusion").font(.headline)
+                    if let elo = conclusion.topElo {
+                        Text("top Elo \(elo)").font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Text(top).font(.title3.weight(.semibold)).textSelection(.enabled)
+                if !conclusion.synthesis.isEmpty {
+                    Text(conclusion.synthesis).font(.callout).foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal).padding(.vertical, 10)
+            .background(.green.opacity(0.06))
+        }
     }
 
     // MARK: Config
@@ -65,6 +93,20 @@ struct StudyDetailView: View {
                     value: $study.hypothesesPerGeneration, in: 2...12).disabled(live).fixedSize()
                 Stepper("Iterations: \(study.iterations)",
                     value: $study.iterations, in: 1...4).disabled(live).fixedSize()
+            }
+
+            DisclosureGroup("Advanced") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Stepper("Survivors per round: \(study.evolutionTopK)",
+                        value: $study.evolutionTopK, in: 1...12).disabled(live).fixedSize()
+                    Text("How many top hypotheses continue after each refinement round.")
+                        .font(.caption).foregroundStyle(.secondary)
+                    Stepper("Tournament size: \(study.tournamentSize)",
+                        value: $study.tournamentSize, in: 2...16).disabled(live).fixedSize()
+                    Text("How many hypotheses compete in the ranking tournament.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(.top, 4)
             }
 
             if !settings.remoteReady {
