@@ -96,9 +96,13 @@ at planning time.
   picker surfacing `docs/MODELS.md` strengths + device-RAM fit; Settings
   slimmed to providers + downloads. See `docs/MILESTONE-13-CLOSEOUT.md`.
 - **M14 — Run config + results outcome (macOS).** Survivors (`evolutionTopK`)
-  + tournament size exposed in a Study Advanced section; a results header
+  + tournament rounds exposed in a Study Advanced section; a results header
   that states the conclusion (top hypothesis + meta-review). See
   `docs/MILESTONE-14-CLOSEOUT.md`.
+- **M15 — iOS.** The M13/M14 redesign on iPhone/iPad: size-class-adaptive
+  inspector + on-device memory/thermal hardening (`RunGuard`). See
+  `docs/MILESTONE-15-CLOSEOUT.md`. (Plus fixes: persisted/surfaced run
+  errors, and a real tournament-rounds control.)
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -117,19 +121,29 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The mac UX overhaul (**M13** model selection, **M14** run config + results)
-is delivered. The arc finishes on iOS:
+The UX overhaul (M13–M15) is delivered. Next: a **studies + sync arc**
+(`milestone-planner`, 2026-06-05):
 
-- **M15 — iOS.** Port the M13/M14 redesign to iPhone, iPad-adaptive layout,
-  and on-device memory/thermal hardening (absorbs the earlier iPad-polish
-  scope). *(in flight — `MILESTONE-15-PLAN.md`)*
+- **M16 — Study title + body + CRUD parity.** Editable title distinct from
+  the goal/body; full create/rename/delete on both apps; faithful
+  `StudyDocument` round-trip; CloudKit-ready model. *(draft, next to grind)*
+- **M17 — iCloud sync (SwiftData + CloudKit).** Studies sync across the
+  user's devices via the private CloudKit DB. Requires real team signing
+  (team `G98TZJ75HL`, per the Khaos Machine distro) + an iCloud container.
+  *(draft)*
+- **M18 — Distributed cross-device compute (feasibility spike).** Research
+  whether Apple Silicon across iCloud devices can run studies distributed;
+  a findings doc + verdict, no code commitment. *(draft)*
 
 Candidate themes (not yet drafted):
 
+- **Multi-indicator run progress.** Replace the single overloaded progress
+  bar with stacked indicators (segmented / radial / standard / charts /
+  custom SwiftUI) conveying activity + phase progress (operator idea,
+  2026-06-05).
 - **Model registry sync.** A synchronizable JSON model registry hosted on
-  the repo / GitHub Pages, fetched + cached + merged with the built-in
-  `ModelCatalog`, so model options + tier/strengths research update without
-  a new build (operator idea, 2026-06-05).
+  the repo / GitHub Pages, so model options + research update without a
+  new build (operator idea).
 - **Parity test harness.** Run a fixed research goal through both this
   port and the Python reference; compare structure/quality.
 - **Native Foundation Models tool calling.** Bridge `AgentTool` →
