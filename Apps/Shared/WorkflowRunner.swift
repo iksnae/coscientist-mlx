@@ -23,6 +23,9 @@ final class WorkflowRunner {
     private(set) var errors: [String] = []
     private(set) var activity: [ActivityEvent] = []
     private(set) var downloadProgress: Double?
+    /// True only when this run actually needs to fetch a model (vs. loading one already cached),
+    /// so the UI can say "Downloading" honestly rather than on every load.
+    private(set) var downloadingNeeded = false
     private(set) var timeline: [ProgressPoint] = []
 
     private var task: Task<Void, Never>?
@@ -67,7 +70,13 @@ final class WorkflowRunner {
     }
 
     private func run(study: Study, context: ModelContext, id: UUID) async {
-        status = "Loading models (first run downloads from Hugging Face)…"
+        // Does this run actually fetch anything, or just load cached models?
+        downloadingNeeded = downloadPlan(for: study).contains {
+            if case .proceed(let bytes, _) = $0.decision, bytes > 0 { return true }
+            return false
+        }
+        status = downloadingNeeded
+            ? "Downloading models from Hugging Face…" : "Loading models…"
         phase = ""; detail = ""; completed = 0; total = 0
         hypotheses = []; errors = []; activity = []; metrics = ExecutionMetrics()
         timeline = []; downloadProgress = nil; activityStep = 0
