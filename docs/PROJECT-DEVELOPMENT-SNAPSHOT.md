@@ -30,10 +30,12 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-Nothing promoted — the **M6–M11 batch is fully delivered**. Run
-`milestone-planner` to scope the next arc. Candidate themes (see
-`docs/ROADMAP.md`): parity-test harness, native Foundation Models tool
-calling, iOS parity.
+- **M12 — Shared app core + iOS (iPhone) functional parity** —
+  `docs/MILESTONE-12-PLANNING-DRAFT.md`. Extract the cross-platform
+  model + views into `Apps/Shared`; bring the full demo to iPhone. Next to
+  grind. **M13** (iOS polish — iPad + on-device hardening) queued.
+- Candidate themes (see `docs/ROADMAP.md`): parity-test harness, native
+  Foundation Models tool calling.
 
 ## Pointers
 
