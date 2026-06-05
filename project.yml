@@ -13,7 +13,10 @@ options:
   createIntermediateGroups: true
 settings:
   base:
-    DEVELOPMENT_TEAM: "53J75BLCPY"
+    # Real team signing (Khaos team, paid) so the apps can use the iCloud/CloudKit entitlement
+    # for cross-device study sync (M17). Automatic signing creates/uses the development cert +
+    # provisioning profile (incl. the iCloud container) for this team.
+    DEVELOPMENT_TEAM: "G98TZJ75HL"
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "0.0.1"
@@ -35,10 +38,13 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.iksnae.coscientist.app
+        CODE_SIGN_ENTITLEMENTS: Apps/iOS/CoScientistApp.entitlements
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: CoScientist
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        # Background mode so SwiftData+CloudKit can apply remote changes via silent pushes.
+        INFOPLIST_KEY_UIBackgroundModes: remote-notification
         TARGETED_DEVICE_FAMILY: "1,2"
     dependencies:
       - package: coscientist-mlx
@@ -63,16 +69,15 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.iksnae.coscientist.demo
+        CODE_SIGN_ENTITLEMENTS: Apps/macOS/CoScientistDemo.entitlements
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: CoScientist
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
-        # Local demo: not sandboxed, so it can reach Hugging Face and use the model cache.
+        # Not sandboxed, so it can reach Hugging Face and use the on-disk model cache.
         ENABLE_APP_SANDBOX: NO
-        # Ad-hoc signing — builds/runs locally without a Mac Development certificate.
-        CODE_SIGN_STYLE: Manual
-        CODE_SIGN_IDENTITY: "-"
-        CODE_SIGNING_REQUIRED: "NO"
-        DEVELOPMENT_TEAM: ""
+        # Real team signing (inherits base DEVELOPMENT_TEAM + Automatic) for the iCloud/CloudKit
+        # entitlement. Was ad-hoc ("-"); CloudKit needs a provisioned identity, so the demo now
+        # signs with the development team like the iOS app.
     dependencies:
       - package: coscientist-mlx
         product: AICoScientistKit

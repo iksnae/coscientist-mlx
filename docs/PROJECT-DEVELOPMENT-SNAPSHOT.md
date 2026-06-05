@@ -17,6 +17,13 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
+- **M17 — iCloud sync (SwiftData + CloudKit).** Real team signing
+  (`G98TZJ75HL`) + per-app iCloud/CloudKit entitlements; `StudyContainer`
+  on the CloudKit private DB with a local-first fallback. Both apps build
+  signed with the entitlement embedded (auto-provisioned); live two-device
+  sync is the one operator-pending check. `ci_post_clone.sh` makes the
+  generated project Xcode-Cloud-buildable; all deps public (no auth). See
+  `docs/MILESTONE-17-CLOSEOUT.md`.
 - **M16 — Study title + body + CRUD parity (CloudKit-ready).** Editable
   `Study.title` (defaults from the goal's first line, independent after),
   shown in the list + context-menu rename; a pure `StudyConfig` (Kit)
@@ -39,14 +46,15 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-The UX overhaul (M13–M15) and **M16** (study title/CRUD + CloudKit-ready
-model) shipped. Next in the **studies + sync arc** (drafted):
+The UX overhaul (M13–M15), **M16** (study title/CRUD), and **M17** (iCloud
+sync — signing + CloudKit container) shipped. Next in the **studies + sync
+arc** (drafted):
 
-- **M17 — iCloud sync (SwiftData + CloudKit)** — private-DB sync across
-  devices; needs real team signing (team `G98TZJ75HL`) + an iCloud
-  container. **Has a hard external dependency** (the operator's Apple
-  Developer account / iCloud container at grind time) — left as a draft,
-  not yet promoted. *(draft, next to grind)*
+- **Operator-pending:** live two-device sync verification for M17 (needs
+  two iCloud-signed devices) — the one acceptance not reproducible
+  headlessly.
+- **M18 — Distributed compute feasibility spike** — research + findings
+  doc; no signing needed. *(draft, next to grind)*
 - **M18 — Distributed compute feasibility spike** — research + findings
   doc. *(draft)*
 - Candidate themes (see `docs/ROADMAP.md`): multi-indicator run progress,
