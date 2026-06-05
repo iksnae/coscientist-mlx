@@ -17,25 +17,23 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
-- **M11 — Batched reflection** (PR #39). `BatchReflectionAgent` reviews the
-  whole pool in one decode (O(N)→1 reflection calls), backend-agnostic.
-  Re-scoped from cache-reuse/quant-tiers. See `docs/MILESTONE-11-CLOSEOUT.md`.
-  137 tests / 31 suites.
-- **M10 — Foundation Models backend** (PR #36). See `docs/MILESTONE-10-CLOSEOUT.md`.
-- **M9 — Transparent activity** (PR #35).
-- **M8 — Hypothesis selection + inspector** (PR #34).
-- **M7 — Hosted per-agent model backing** (PR #31).
-- **M6 — Agent tool-use loop** (PR #30).
+- **M12 — Shared app core + iOS (iPhone) parity** (PRs #42, #43).
+  Cross-platform model + views extracted to `Apps/Shared`; the full demo
+  builds + runs on iOS (Studies, run, results + inspector, activity,
+  Settings, charts, graph, export). See `docs/MILESTONE-12-CLOSEOUT.md`.
+  138 tests / 32 suites; macOS + iOS apps build.
+- **M11 — Batched reflection** (PR #39). See `docs/MILESTONE-11-CLOSEOUT.md`.
+- **M10 — Foundation Models backend** (PR #36).
+- **M6–M9** — tool-use loop, hosted backing, inspector, activity (PRs #30–#35).
 - Earlier: M0–M5 numbered milestones; post-M5 feature work (PRs #6–#29).
 
 ## Next in flight
 
-- **M12 — Shared app core + iOS (iPhone) functional parity** —
-  `docs/MILESTONE-12-PLANNING-DRAFT.md`. Extract the cross-platform
-  model + views into `Apps/Shared`; bring the full demo to iPhone. Next to
-  grind. **M13** (iOS polish — iPad + on-device hardening) queued.
+- **M13 — iOS polish** — `docs/MILESTONE-13-PLAN.md` (Ready). iPad-adaptive
+  multi-column layout + on-device memory/thermal hardening. Last of the
+  iOS arc.
 - Candidate themes (see `docs/ROADMAP.md`): parity-test harness, native
-  Foundation Models tool calling.
+  Foundation Models tool calling, iOS HF-cache-path accuracy + study import.
 
 ## Pointers
 

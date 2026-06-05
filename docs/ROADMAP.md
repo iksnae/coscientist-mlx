@@ -87,6 +87,10 @@ at planning time.
 - **M11 — Batched reflection.** `BatchReflectionAgent` reviews the whole
   pool in one decode (O(N)→1 reflection calls), backend-agnostic. Re-scoped
   from cache-reuse/quant-tiers. See `docs/MILESTONE-11-CLOSEOUT.md`.
+- **M12 — Shared app core + iOS (iPhone) parity.** Cross-platform model +
+  views extracted to `Apps/Shared`; the full demo (Studies, run, results +
+  inspector, activity, Settings, charts, graph, export) builds and runs on
+  iOS. See `docs/MILESTONE-12-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -105,15 +109,11 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The 2026-06-04 batch (M6–M11) is fully delivered. The **iOS arc**
-(M12–M13) is drafted next (`milestone-planner`, 2026-06-05):
+The 2026-06-04 batch (M6–M11) and **M12 (iOS iPhone parity)** are
+delivered. The iOS arc continues:
 
-- **M12 — Shared app core + iOS (iPhone) functional parity.** Extract the
-  cross-platform model + views into `Apps/Shared`; iPhone demo with
-  Studies, run, results + inspector, activity, Settings, graph, charts,
-  export. *(draft, next to grind)*
-- **M13 — iOS polish.** iPad-adaptive layout + on-device memory/thermal
-  hardening. *(draft)*
+- **M13 — iOS polish.** iPad-adaptive multi-column layout + on-device
+  memory/thermal hardening. *(in flight — `MILESTONE-13-PLAN.md`)*
 
 Candidate themes (not yet drafted):
 
