@@ -134,18 +134,28 @@ final class WorkflowRunner {
             metrics = result.metrics
             errors = result.errors
             let cancelled = result.errors.contains { $0.localizedCaseInsensitiveContains("cancel") }
+            let produced = !result.topRankedHypotheses.isEmpty
+            let issues = result.errors.count
             phase = "done"; detail = ""; completed = 0; total = 0
-            status = cancelled
-                ? "Cancelled · \(result.topRankedHypotheses.count) hypotheses so far"
-                : String(
+            if cancelled {
+                status = "Cancelled · \(result.topRankedHypotheses.count) hypotheses so far"
+            } else if !produced {
+                // A finished run with no hypotheses is a failure, not "Done" — say so loudly.
+                status = "No hypotheses produced · \(issues) issue\(issues == 1 ? "" : "s") — see Issues"
+            } else if issues > 0 {
+                status = String(
+                    format: "Done with %d issue(s) · %.1fs", issues, result.totalWorkflowTime)
+            } else {
+                status = String(
                     format: "Done · %.1fs · %d repairs · %d decode failures",
                     result.totalWorkflowTime, result.metrics.repairAttempts,
                     result.metrics.decodeFailures)
+            }
 
             var snapshot = RunSnapshot(researchGoal: study.goal, result: result)
             snapshot.activity = activity
             study.snapshot = snapshot
-            study.status = cancelled ? .draft : .done
+            study.status = cancelled ? .draft : (produced ? .done : .error)
         } catch {
             status = "Error: \(error)"
             study.status = .error

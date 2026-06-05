@@ -34,6 +34,7 @@ struct StudyDetailView: View {
             configHeader
             Divider()
             outcomeHeader
+            issuesBanner
             Picker("View", selection: $resultTab) {
                 ForEach(ResultTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
@@ -73,6 +74,29 @@ struct StudyDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal).padding(.vertical, 10)
             .background(.green.opacity(0.06))
+        }
+    }
+
+    /// Surfaces errors recorded during a finished run, so a failed/empty run isn't silent.
+    @ViewBuilder private var issuesBanner: some View {
+        if !live, let errors = study.snapshot?.errors, !errors.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Label(
+                    "\(errors.count) issue\(errors.count == 1 ? "" : "s") during the run",
+                    systemImage: "exclamationmark.triangle.fill")
+                    .font(.subheadline.bold()).foregroundStyle(.orange)
+                ForEach(Array(errors.prefix(6).enumerated()), id: \.offset) { _, message in
+                    Text(message).font(.caption.monospaced()).foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if errors.count > 6 {
+                    Text("…and \(errors.count - 6) more").font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal).padding(.vertical, 8)
+            .background(.orange.opacity(0.08))
         }
     }
 
