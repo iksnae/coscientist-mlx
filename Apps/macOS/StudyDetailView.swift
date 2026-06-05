@@ -67,10 +67,10 @@ struct StudyDetailView: View {
                     value: $study.iterations, in: 1...4).disabled(live).fixedSize()
             }
 
-            Toggle("Use remote judge (hybrid)", isOn: $study.useRemoteJudge)
+            Toggle("Use hosted models", isOn: $study.useRemoteJudge)
                 .disabled(live || !settings.remoteReady)
             if !settings.remoteReady {
-                Text("Configure a remote provider in Settings ▸ Providers to enable hybrid.")
+                Text("Configure a hosted provider in Settings ▸ Providers, then assign agents (incl. the generator).")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
