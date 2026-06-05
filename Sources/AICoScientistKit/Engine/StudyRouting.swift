@@ -4,6 +4,23 @@
 public enum ModelChoice: Sendable, Equatable, Codable {
     case onDevice(String)
     case hosted(String)
+
+    /// Build from a stored kind ("onDevice" / "hosted") + id — for SwiftData-friendly storage.
+    public init(kind: String, id: String) {
+        self = kind == "hosted" ? .hosted(id) : .onDevice(id)
+    }
+
+    /// The stored ("onDevice"/"hosted", id) pair.
+    public var kindAndID: (kind: String, id: String) {
+        switch self {
+        case .onDevice(let id): return ("onDevice", id)
+        case .hosted(let id): return ("hosted", id)
+        }
+    }
+
+    /// The model id/key regardless of kind.
+    public var id: String { kindAndID.id }
+    public var isHosted: Bool { if case .hosted = self { return true }; return false }
 }
 
 /// Builds the engine's `DecoderRouting` from a Study's Generator + Reviewer choices. The

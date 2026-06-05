@@ -55,21 +55,21 @@ struct StudyDetailView: View {
             TextField("Research goal", text: $study.goal, axis: .vertical)
                 .font(.title3).textFieldStyle(.plain).lineLimit(1...3).disabled(live)
 
+            ModelChoicePicker(title: "Generator", choice: $study.generator, store: settings)
+                .disabled(live)
+            ModelChoicePicker(title: "Reviewer", choice: $study.reviewer, store: settings)
+                .disabled(live)
+
             HStack(spacing: 16) {
-                Picker("Model", selection: $study.generatorKey) {
-                    ForEach(ModelCatalog.generators) { Text($0.displayName).tag($0.key) }
-                }
-                .frame(maxWidth: 280).disabled(live)
                 Stepper("Hypotheses: \(study.hypothesesPerGeneration)",
                     value: $study.hypothesesPerGeneration, in: 2...12).disabled(live).fixedSize()
                 Stepper("Iterations: \(study.iterations)",
                     value: $study.iterations, in: 1...4).disabled(live).fixedSize()
             }
 
-            Toggle("Use hosted models", isOn: $study.useRemoteJudge)
-                .disabled(live || !settings.remoteReady)
             if !settings.remoteReady {
-                Text("Configure a hosted provider in Settings ▸ Providers, then assign agents (incl. the generator).")
+                Text("Models run on-device. Add a hosted provider in Settings ▸ Providers to use "
+                    + "a hosted model for the generator or reviewer.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
