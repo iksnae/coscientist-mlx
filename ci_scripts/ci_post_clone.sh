@@ -31,4 +31,11 @@ echo "ci_post_clone: generating CoScientist.xcodeproj from project.yml"
 echo "ci_post_clone: generated; shared schemes:"
 ls CoScientist.xcodeproj/xcshareddata/xcschemes/ || echo "WARNING: no shared schemes generated"
 
+# SwiftPM macros (e.g. MLXHuggingFaceMacros from mlx-swift-lm) require explicit "Trust &
+# Enable", which is interactive in Xcode. Headless/CI builds must skip the fingerprint
+# prompt or the build fails: "Macro ... must be enabled before it can be used".
+echo "ci_post_clone: trusting SwiftPM macros + plugins for headless build"
+defaults write com.apple.dt.Xcode IDESkipMacroFingerprintValidation -bool YES
+defaults write com.apple.dt.Xcode IDESkipPackagePluginFingerprintValidatation -bool YES
+
 echo "ci_post_clone: done"
