@@ -1,4 +1,4 @@
-# Milestone 18 Planning Draft
+# Milestone 18 Plan
 
 Date: 2026-06-05
 
@@ -10,7 +10,7 @@ Distributed cross-device compute — feasibility spike
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-18-PLAN.md.
+Ready.
 
 ## Goal
 
@@ -76,12 +76,13 @@ Investigate and write `docs/SPIKE-distributed-compute.md` covering:
   the spike says it's feasible.
 - Any change to the engine/adapters in this milestone.
 
-## Open Questions
+## Resolved Decisions
 
-- **Local-network fallback scope.** If no first-party cross-device API
-  exists, how far to specify the "Mac as a local model server +
-  `RemoteLanguageModel` over Bonjour" alternative. Lean: specify it as the
-  recommended follow-on if the first-party path is absent.
+- **Local-network fallback scope.** Decided: since no first-party
+  cross-device compute API exists, the spike specifies the "Mac as a local
+  model server + `RemoteLanguageModel` over Bonjour/NetworkBrowser"
+  alternative as the **recommended follow-on milestone** (drafted as M19),
+  reusing the M7 hosted-backing seam.
 
 ## Risk
 
