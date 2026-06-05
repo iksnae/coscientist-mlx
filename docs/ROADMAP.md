@@ -109,6 +109,13 @@ at planning time.
   drives a faithful `StudyDocument` round-trip (title + model choices +
   run config), unit-tested; the SwiftData model verified CloudKit-ready.
   See `docs/MILESTONE-16-CLOSEOUT.md`.
+- **M17 — iCloud sync (SwiftData + CloudKit).** Real team signing
+  (`G98TZJ75HL`) + per-app iCloud/CloudKit entitlements; `StudyContainer`
+  on the CloudKit private DB (`iCloud.com.iksnae.coscientist`) with a
+  local-first fallback. Both apps build signed with the entitlement
+  embedded; live two-device sync is the one operator-pending check. Adds
+  `ci_post_clone.sh` for Xcode Cloud (public deps, no auth). See
+  `docs/MILESTONE-17-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -127,14 +134,11 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The UX overhaul (M13–M15) is delivered and **M16** (study title/CRUD +
-CloudKit-ready model) has landed. Next in the **studies + sync arc**
+The UX overhaul (M13–M15), **M16** (study title/CRUD + CloudKit-ready
+model), and **M17** (iCloud sync — signing + CloudKit private-DB
+container) have landed. Next in the **studies + sync arc**
 (`milestone-planner`, 2026-06-05):
 
-- **M17 — iCloud sync (SwiftData + CloudKit).** Studies sync across the
-  user's devices via the private CloudKit DB. Requires real team signing
-  (team `G98TZJ75HL`, per the Khaos Machine distro) + an iCloud container.
-  *(draft)*
 - **M18 — Distributed cross-device compute (feasibility spike).** Research
   whether Apple Silicon across iCloud devices can run studies distributed;
   a findings doc + verdict, no code commitment. *(draft)*
