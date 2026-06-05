@@ -29,16 +29,21 @@ and on iPhone. M0–M7 landed.
 
 ## Next in flight
 
-The mac UX overhaul shipped: **M13** (model selection control-flow) and
-**M14** (run config + results outcome). Plus a fix: run errors are now
-persisted + surfaced (no more silent failures, PR #49).
+The UX overhaul (M13–M15) shipped, plus fixes (persisted/surfaced run
+errors PR #49; real tournament-rounds control PR #51). Next: a **studies +
+sync arc** (drafted).
 
-- **M15 — iOS** — `docs/MILESTONE-15-PLAN.md` (Ready). Port the M13/M14
-  redesign to iPhone, iPad-adaptive layout, and on-device memory/thermal
-  hardening (absorbs the earlier iPad-polish scope). Finishes the iOS arc.
-- Candidate themes (see `docs/ROADMAP.md`): **model registry sync**
-  (operator idea — updatable model index hosted on the repo/Pages),
-  parity-test harness, native Foundation Models tool calling.
+- **M16 — Study title + body + CRUD parity** —
+  `docs/MILESTONE-16-PLANNING-DRAFT.md`. Editable title vs goal/body, CRUD
+  on both apps, faithful `StudyDocument` round-trip, CloudKit-ready model.
+  Next to grind.
+- **M17 — iCloud sync (SwiftData + CloudKit)** — private-DB sync across
+  devices; needs real team signing (team `G98TZJ75HL`) + an iCloud
+  container. *(draft)*
+- **M18 — Distributed compute feasibility spike** — research + findings
+  doc. *(draft)*
+- Candidate themes (see `docs/ROADMAP.md`): multi-indicator run progress,
+  model registry sync, parity-test harness, native FM tool calling.
 
 ## Pointers
 
