@@ -7,6 +7,6 @@ struct CoScientistApp: App {
         WindowGroup {
             StudiesView()
         }
-        .modelContainer(for: Study.self)
+        .modelContainer(StudyContainer.shared())
     }
 }

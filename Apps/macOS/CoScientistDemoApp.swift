@@ -8,7 +8,7 @@ struct CoScientistDemoApp: App {
             StudiesView()
         }
         .defaultSize(width: 1040, height: 680)
-        .modelContainer(for: Study.self)
+        .modelContainer(StudyContainer.shared())
 
         Settings {
             SettingsView()
