@@ -92,9 +92,8 @@ private struct ProvidersSettings: View {
         @Bindable var store = store
         Form {
             Section("Hosted provider") {
-                Toggle("Enable hosted models", isOn: $store.remoteEnabled)
-                TextField("Base URL", text: $store.remoteBaseURL).disabled(!store.remoteEnabled)
-                SecureField("API key", text: $store.openAIKey).disabled(!store.remoteEnabled)
+                TextField("Base URL", text: $store.remoteBaseURL)
+                SecureField("API key", text: $store.openAIKey)
                 HStack {
                     defaultModelField($store)
                     Button {
@@ -103,13 +102,14 @@ private struct ProvidersSettings: View {
                         Label(store.isFetchingModels ? "Fetching…" : "Refresh",
                             systemImage: "arrow.clockwise")
                     }
-                    .disabled(!store.remoteEnabled || store.isFetchingModels)
+                    .disabled(store.openAIKey.isEmpty || store.isFetchingModels)
                 }
                 if let error = store.modelsError {
                     Text(error).font(.caption).foregroundStyle(.red)
                 }
-                Text("OpenAI-compatible. Add a provider and refresh, then pick a hosted model as "
-                    + "a study's Generator or Reviewer. The key is stored locally in app preferences.")
+                Text("OpenAI-compatible. Enter a base URL, API key, and model — hosted models then "
+                    + "appear automatically as a study's Generator or Reviewer (no refresh needed). "
+                    + "The key is stored locally in app preferences.")
                     .font(.caption).foregroundStyle(.secondary)
             }
 
@@ -126,12 +126,11 @@ private struct ProvidersSettings: View {
     /// The default remote model — a picker over discovered models, or free text before a fetch.
     @ViewBuilder private func defaultModelField(_ store: Bindable<SettingsStore>) -> some View {
         if store.wrappedValue.fetchedModels.isEmpty {
-            TextField("Model", text: store.remoteModel).disabled(!store.wrappedValue.remoteEnabled)
+            TextField("Model", text: store.remoteModel)
         } else {
             Picker("Model", selection: store.remoteModel) {
                 ForEach(store.wrappedValue.fetchedModels, id: \.self) { Text($0).tag($0) }
             }
-            .disabled(!store.wrappedValue.remoteEnabled)
         }
     }
 }

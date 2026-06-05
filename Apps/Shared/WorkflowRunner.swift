@@ -43,8 +43,13 @@ final class WorkflowRunner {
     func isRunning(_ study: Study) -> Bool { runningStudyID == study.id }
 
     /// Disk decisions for this study's models (so the UI can confirm or block before download).
+    /// Uses the actually-selected on-device Generator (hosted choices download nothing) plus the
+    /// embedder, which always runs on-device.
     func downloadPlan(for study: Study) -> [(name: String, decision: DownloadGuard.Decision)] {
-        [study.generatorKey, SettingsStore.shared.embedderKey].map { key in
+        var keys: [String] = []
+        if case .onDevice(let key) = study.generator { keys.append(key) }
+        keys.append(SettingsStore.shared.embedderKey)
+        return keys.map { key in
             (ModelCatalog.model(key: key)?.displayName ?? key, DownloadGuard.decide(forKeyOrID: key))
         }
     }
