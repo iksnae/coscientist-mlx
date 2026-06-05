@@ -10,7 +10,10 @@ iOS — redesigned UX + iPad layout + on-device hardening
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-15-PLAN.md.
+Ready. Promoted from `docs/MILESTONE-15-PLANNING-DRAFT.md`.
+
+Resolved: critical thermal → stop-with-partial-results (reuses the cancel
+path); the memory-fit check reuses the catalog model's `minRAMGB`.
 
 ## Goal
 

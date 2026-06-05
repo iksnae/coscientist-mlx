@@ -91,6 +91,14 @@ at planning time.
   views extracted to `Apps/Shared`; the full demo (Studies, run, results +
   inspector, activity, Settings, charts, graph, export) builds and runs on
   iOS. See `docs/MILESTONE-12-CLOSEOUT.md`.
+- **M13 — Model selection control-flow (macOS).** Per-study Generator +
+  Reviewer (each on-device | hosted) via `StudyRouting`; install/system-aware
+  picker surfacing `docs/MODELS.md` strengths + device-RAM fit; Settings
+  slimmed to providers + downloads. See `docs/MILESTONE-13-CLOSEOUT.md`.
+- **M14 — Run config + results outcome (macOS).** Survivors (`evolutionTopK`)
+  + tournament size exposed in a Study Advanced section; a results header
+  that states the conclusion (top hypothesis + meta-review). See
+  `docs/MILESTONE-14-CLOSEOUT.md`.
 
 ### Shipped post-M5 as feature PRs (pre-loop)
 
@@ -109,23 +117,19 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-M6–M12 are delivered. Next: a **user-layer control-flow + UX overhaul**
-(`milestone-planner`, 2026-06-05) — the foundation is strong but model
-switching, run config, and results clarity are scattered/hidden. Driven by
-the vendored Swift UI/UX skills:
+The mac UX overhaul (**M13** model selection, **M14** run config + results)
+is delivered. The arc finishes on iOS:
 
-- **M13 — Model selection control-flow (macOS).** One mental model:
-  per-study Generator + Reviewer, each {on-device | hosted}; install-aware
-  pickers; Settings shrinks to providers + downloads. *(draft, next to grind)*
-- **M14 — Run config + results outcome (macOS).** Expose the hidden engine
-  params (survivors/evolutionTopK, tournament size, tool steps) in an
-  Advanced section; a results header that states the conclusion. *(draft)*
-- **M15 — iOS.** Port the redesign to iPhone, iPad-adaptive layout, and
-  on-device memory/thermal hardening (absorbs the earlier iPad-polish
-  scope). *(draft)*
+- **M15 — iOS.** Port the M13/M14 redesign to iPhone, iPad-adaptive layout,
+  and on-device memory/thermal hardening (absorbs the earlier iPad-polish
+  scope). *(in flight — `MILESTONE-15-PLAN.md`)*
 
 Candidate themes (not yet drafted):
 
+- **Model registry sync.** A synchronizable JSON model registry hosted on
+  the repo / GitHub Pages, fetched + cached + merged with the built-in
+  `ModelCatalog`, so model options + tier/strengths research update without
+  a new build (operator idea, 2026-06-05).
 - **Parity test harness.** Run a fixed research goal through both this
   port and the Python reference; compare structure/quality.
 - **Native Foundation Models tool calling.** Bridge `AgentTool` →
