@@ -13,6 +13,10 @@ enum StudyStatus: String, Codable, Sendable {
 final class Study {
     var id: UUID = UUID()
     var title: String = "New study"
+    /// Whether the user has explicitly named the study. While false, the title tracks the goal's
+    /// first line (so the sidebar shows real goals instead of a row of identical seed titles);
+    /// once the user edits the title it stops auto-tracking. Defaulted → CloudKit-safe.
+    var titleIsCustom: Bool = false
     var goal: String = ""
     var generatorKey: String = ModelCatalog.defaultGeneratorKey
     var hypothesesPerGeneration: Int = 4

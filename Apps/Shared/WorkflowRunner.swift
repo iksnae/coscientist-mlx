@@ -161,18 +161,22 @@ final class WorkflowRunner {
             let issues = result.errors.count
             phase = "done"; detail = ""; completed = 0; total = 0
             if cancelled {
-                status = "Cancelled · \(result.topRankedHypotheses.count) hypotheses so far"
+                status = "Cancelled · "
+                    + RunStatusText.count(result.topRankedHypotheses.count, "hypothesis", "hypotheses")
+                    + " so far"
             } else if !produced {
                 // A finished run with no hypotheses is a failure, not "Done" — say so loudly.
-                status = "No hypotheses produced · \(issues) issue\(issues == 1 ? "" : "s") — see Issues"
+                status = "No hypotheses produced · "
+                    + RunStatusText.count(issues, "issue", "issues") + " — see Issues"
             } else if issues > 0 {
                 status = String(
-                    format: "Done with %d issue(s) · %.1fs", issues, result.totalWorkflowTime)
+                    format: "Done with %@ · %.1fs",
+                    RunStatusText.count(issues, "issue", "issues"), result.totalWorkflowTime)
             } else {
                 status = String(
-                    format: "Done · %.1fs · %d repairs · %d decode failures",
-                    result.totalWorkflowTime, result.metrics.repairAttempts,
-                    result.metrics.decodeFailures)
+                    format: "Done · %.1fs · %@ · %@", result.totalWorkflowTime,
+                    RunStatusText.count(result.metrics.repairAttempts, "repair", "repairs"),
+                    RunStatusText.count(result.metrics.decodeFailures, "decode failure", "decode failures"))
             }
 
             var snapshot = RunSnapshot(researchGoal: study.goal, result: result)

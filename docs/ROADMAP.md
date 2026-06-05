@@ -125,6 +125,13 @@ at planning time.
   `docs/MILESTONE-20-CLOSEOUT.md`. (Xcode Cloud build pipeline also brought
   green — xcodegen-from-GitHub, shared schemes, macro trust; see the
   `xcode-cloud` skill.)
+- **M21 — Professional UI redesign.** Differentiated sidebar (title
+  auto-tracks the goal until renamed); pickers show the selected model with a
+  concise per-choice caption (strengths moved into menu items); a
+  synthesis-led conclusion with a truncated/expandable top hypothesis (no
+  verbatim duplication); plain-language, correctly pluralized status (pure
+  `RunStatusText`); `ActivityFeedView` extracted. See
+  `docs/MILESTONE-21-CLOSEOUT.md`.
 - **M18 — Distributed cross-device compute (feasibility spike).** Found
   **no first-party iCloud compute-sharing API** and that layer-split
   distributed inference is impractical on iOS; recommends **local-network
@@ -149,18 +156,14 @@ roadmap for continuity:
 
 ### Upcoming (themes — sequenced by the planner)
 
-The studies + sync arc (M16/M17), the M18 spike, and **M20** (provider
-loading + state cleanup) are done. Now a **UX-quality arc**:
+The studies + sync arc (M16/M17), the M18 spike, and the UX-quality arc
+(**M20** provider loading/state cleanup, **M21** professional UI redesign)
+are done. Next:
 
-- **M21 — Professional UI redesign.** Main study view, sidebar, pickers,
-  results: differentiated titles, selected-model shown in pickers,
-  non-duplicated conclusion, plain-language status, coherent hierarchy.
-  Applies the SwiftUI design skills. `docs/MILESTONE-21-PLANNING-DRAFT.md`.
-  *(draft, next to grind)*
 - **M19 — LAN model offload.** A Mac runs an OpenAI-compatible endpoint;
   the iPhone/iPad offload study inference to it via `RemoteLanguageModel`
-  (M7 seam), discovered over Bonjour/`NetworkBrowser`. *(draft, parked
-  behind the UX arc)*
+  (M7 seam), discovered over Bonjour/`NetworkBrowser`. The realistic
+  "harness Apple Silicon across my devices." *(draft, next to grind)*
 
 Candidate themes (not yet drafted):
 

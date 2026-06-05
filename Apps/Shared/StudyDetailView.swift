@@ -15,6 +15,7 @@ struct StudyDetailView: View {
     @State private var selectedID: Hypothesis.ID?
     @State private var confirm: ConfirmDownload?
     @State private var diskError: String?
+    @State private var topHypothesisExpanded = false
 
     private enum ResultTab: String, CaseIterable {
         case hypotheses = "Hypotheses", graph = "Graph", charts = "Charts", activity = "Activity"
@@ -52,27 +53,40 @@ struct StudyDetailView: View {
 
     // MARK: Outcome
 
-    /// Leads with the conclusion when a finished study has results.
+    /// Leads with the conclusion when a finished study has results: a synthesis headline, then the
+    /// top hypothesis truncated (expandable) so it isn't a verbatim copy of the first ranked row.
     @ViewBuilder private var outcomeHeader: some View {
         if !live, let conclusion = study.snapshot?.conclusion, conclusion.hasResult,
             let top = conclusion.topHypothesis {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
                     Text("Conclusion").font(.headline)
+                    Spacer()
                     if let elo = conclusion.topElo {
                         Text("top Elo \(elo)").font(.caption.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
                 }
-                Text(top).font(.title3.weight(.semibold)).textSelection(.enabled)
+                // Synthesis leads (the understanding across hypotheses); falls back to the top
+                // hypothesis only when there's no separate synthesis.
+                Text(conclusion.synthesis.isEmpty ? top : conclusion.synthesis)
+                    .font(.title3.weight(.semibold)).textSelection(.enabled)
+
                 if !conclusion.synthesis.isEmpty {
-                    Text(conclusion.synthesis).font(.callout).foregroundStyle(.secondary)
-                        .textSelection(.enabled)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("TOP HYPOTHESIS").font(.caption2.bold()).foregroundStyle(.secondary)
+                        Text(top).font(.callout).foregroundStyle(.secondary)
+                            .lineLimit(topHypothesisExpanded ? nil : 3).textSelection(.enabled)
+                        Button(topHypothesisExpanded ? "Show less" : "Show more") {
+                            withAnimation { topHypothesisExpanded.toggle() }
+                        }
+                        .font(.caption).buttonStyle(.plain).foregroundStyle(.tint)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal).padding(.vertical, 10)
+            .padding(.horizontal).padding(.vertical, 12)
             .background(.green.opacity(0.06))
         }
     }
@@ -82,7 +96,7 @@ struct StudyDetailView: View {
         if !live, let errors = study.snapshot?.errors, !errors.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Label(
-                    "\(errors.count) issue\(errors.count == 1 ? "" : "s") during the run",
+                    "\(RunStatusText.count(errors.count, "issue", "issues")) during the run",
                     systemImage: "exclamationmark.triangle.fill")
                     .font(.subheadline.bold()).foregroundStyle(.orange)
                 ForEach(Array(errors.prefix(6).enumerated()), id: \.offset) { _, message in
@@ -104,12 +118,26 @@ struct StudyDetailView: View {
 
     private var configHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
-            TextField("Title", text: $study.title)
+            TextField("Untitled study", text: $study.title)
                 .font(.title2.weight(.semibold)).textFieldStyle(.plain).disabled(live)
-                .onChange(of: study.title) { _, _ in study.updatedAt = Date(); try? context.save() }
-            TextField("Research goal", text: $study.goal, axis: .vertical)
+                .onChange(of: study.title) { _, newTitle in
+                    // Mark the title custom once it diverges from what the goal would derive,
+                    // so it stops auto-tracking the goal.
+                    if newTitle != StudyConfig.defaultTitle(forGoal: study.goal) {
+                        study.titleIsCustom = true
+                    }
+                    study.updatedAt = Date(); try? context.save()
+                }
+            TextField("Research goal — what should the agents investigate?",
+                text: $study.goal, axis: .vertical)
                 .font(.callout).foregroundStyle(.secondary)
                 .textFieldStyle(.plain).lineLimit(1...3).disabled(live)
+                .onChange(of: study.goal) { _, newGoal in
+                    // Until the user names the study, the title follows the goal's first line.
+                    if !study.titleIsCustom {
+                        study.title = StudyConfig.defaultTitle(forGoal: newGoal)
+                    }
+                }
 
             ModelChoicePicker(title: "Generator", choice: $study.generator, store: settings)
                 .disabled(live)
@@ -205,8 +233,9 @@ struct StudyDetailView: View {
     private var statusLine: String {
         switch study.status {
         case .done:
-            return "Done · \(hypotheses.count) hypotheses · "
-                + "\(metrics.repairAttempts) repairs · \(metrics.decodeFailures) decode failures"
+            return RunStatusText.finished(
+                hypotheses: hypotheses.count, repairs: metrics.repairAttempts,
+                decodeFailures: metrics.decodeFailures)
         case .error: return "Last run errored."
         case .running: return "Running…"
         case .draft: return "Draft. Configure and run."
@@ -225,7 +254,7 @@ struct StudyDetailView: View {
                     selectedID: $selectedID)
             }
         case .charts: ChartsView(timeline: live ? runner.timeline : [], hypotheses: hypotheses)
-        case .activity: activityList
+        case .activity: ActivityFeedView(events: activityEvents)
         }
     }
 
@@ -313,96 +342,6 @@ struct StudyDetailView: View {
     /// Activity events: live from the runner while running, else the persisted snapshot log.
     private var activityEvents: [ActivityEvent] {
         live ? runner.activity : (study.snapshot?.activity ?? [])
-    }
-
-    @ViewBuilder private var activityList: some View {
-        let events = activityEvents
-        if events.isEmpty {
-            ContentUnavailableView(
-                "No activity yet", systemImage: "list.bullet.rectangle",
-                description: Text("Run the study to watch the pipeline unfold; the feed is saved with the run."))
-        } else {
-            VStack(spacing: 0) {
-                sparkHeader(events)
-                Divider()
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 2) {
-                            ForEach(events) { event in
-                                activityRow(event).id(event.step)
-                                    .transition(.move(edge: .top).combined(with: .opacity))
-                            }
-                        }
-                        .padding(8)
-                        .animation(.default, value: events.count)
-                    }
-                    .onChange(of: events.count) { _, _ in
-                        if let last = events.last { proxy.scrollTo(last.step, anchor: .bottom) }
-                    }
-                }
-            }
-        }
-    }
-
-    private func sparkHeader(_ events: [ActivityEvent]) -> some View {
-        let points = events.compactMap { e in e.topElo.map { (e.step, $0) } }
-        return HStack {
-            Label("\(events.count) steps", systemImage: "list.bullet").font(.caption)
-            Spacer()
-            if points.count > 1 {
-                Chart(points, id: \.0) { point in
-                    LineMark(x: .value("step", point.0), y: .value("elo", point.1))
-                        .interpolationMethod(.monotone)
-                }
-                .frame(width: 150, height: 28)
-                .chartXAxis(.hidden).chartYAxis(.hidden)
-            }
-            if let pool = events.last?.poolSize {
-                Text("pool \(pool)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-            }
-        }
-        .padding(.horizontal, 8).padding(.vertical, 6)
-    }
-
-    private func activityRow(_ event: ActivityEvent) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: icon(for: event.kind))
-                .foregroundStyle(.tint).frame(width: 18)
-            VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 6) {
-                    Text(event.phase).font(.caption.bold())
-                    if event.iteration > 0 {
-                        Text("iter \(event.iteration)").font(.caption2).foregroundStyle(.secondary)
-                    }
-                    if event.total > 0 {
-                        Text("\(event.completed)/\(event.total)")
-                            .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-                    }
-                }
-                if !event.detail.isEmpty {
-                    Text(event.detail).font(.caption2).foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            if let elo = event.topElo {
-                Text("top \(elo)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func icon(for kind: ActivityEvent.Kind) -> String {
-        switch kind {
-        case .generation: "flask"
-        case .reflection: "magnifyingglass"
-        case .ranking: "list.number"
-        case .tournament: "trophy"
-        case .metaReview: "doc.text.magnifyingglass"
-        case .evolution: "arrow.triangle.branch"
-        case .proximity: "circle.grid.cross"
-        case .tool: "wrench.and.screwdriver"
-        case .other: "circle"
-        }
     }
 
     // MARK: Run + guard

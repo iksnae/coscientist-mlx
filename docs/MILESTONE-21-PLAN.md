@@ -1,4 +1,4 @@
-# Milestone 21 Planning Draft
+# Milestone 21 Plan
 
 Date: 2026-06-05
 
@@ -10,7 +10,7 @@ Professional UI redesign — main study view, sidebar, pickers, results
 
 ## Status
 
-Draft. Not yet promoted to MILESTONE-21-PLAN.md.
+Ready.
 
 ## Goal
 
@@ -118,16 +118,22 @@ status with plain, correctly pluralized language. (`writing-for-interfaces`.)
   single progress view but does not build the stacked-indicator system).
 - A full design-token system / theming overhaul (scope to the main surface).
 
-## Open Questions
+## Resolved Decisions
 
-- **[?]** Default study naming: keep a derived title but seed new studies
-  with an empty goal + inline prompt (so the list shows real goals), vs an
-  explicit auto-name. Lean: empty seed + "Untitled" until the goal is typed,
-  title tracks the goal's first line until the user overrides.
-- **[?]** Whether the config zone collapses to a summary bar after a run, or
-  stays expanded. Lean: collapse to a one-line summary with an edit affordance.
-- **[?]** Conclusion length/disclosure pattern (lineLimit + "Show more" vs a
-  fixed short synthesis). Lean: short synthesis + expandable detail.
+- **Default study naming.** Decided: new studies seed an **empty** goal;
+  `StudyRow` shows the title (or "Untitled study" when blank) so the list
+  isn't a row of identical seed text. Title tracks the goal's first line
+  until the user edits it (M16 behavior retained).
+- **Config zone.** Decided: keep the config visible but tidy it into a
+  compact, grouped header split into subviews; do **not** build a
+  collapse-to-summary interaction in this milestone (defer as polish) — it
+  risks scope creep and the run already disables the controls.
+- **Conclusion disclosure.** Decided: lead with the meta-review **synthesis**;
+  show the top hypothesis **truncated** (line-limited) with an expand toggle;
+  the ranked list below is the full detail (no verbatim headline twice).
+- **Pure status text.** A `RunStatusText` helper in `AICoScientistKit`
+  formats the finished-run status (plain language, correct pluralization),
+  unit-tested; the app uses it instead of inline string-building.
 
 ## Risk
 
