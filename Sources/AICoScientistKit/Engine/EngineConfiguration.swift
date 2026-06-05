@@ -4,20 +4,25 @@ public struct EngineConfiguration: Sendable {
     public var maxIterations: Int
     /// How many hypotheses the generation phase requests.
     public var hypothesesPerGeneration: Int
-    /// Reserved for parity with the reference; tournament rounds are `poolSize * 3`.
-    public var tournamentSize: Int
+    /// Tournament matches run per hypothesis (total matches = pool size × this). Was a
+    /// hardcoded `× 3` in the tournament phase.
+    public var tournamentRoundsPerHypothesis: Int
     /// How many top hypotheses the evolution phase refines each iteration.
     public var evolutionTopK: Int
+    /// How many top-ranked hypotheses the result surfaces (was a hardcoded `prefix(10)`).
+    public var resultLimit: Int
 
     public init(
         maxIterations: Int = 3,
         hypothesesPerGeneration: Int = 10,
-        tournamentSize: Int = 8,
-        evolutionTopK: Int = 3
+        tournamentRoundsPerHypothesis: Int = 3,
+        evolutionTopK: Int = 3,
+        resultLimit: Int = 10
     ) {
         self.maxIterations = maxIterations
         self.hypothesesPerGeneration = hypothesesPerGeneration
-        self.tournamentSize = tournamentSize
+        self.tournamentRoundsPerHypothesis = tournamentRoundsPerHypothesis
         self.evolutionTopK = evolutionTopK
+        self.resultLimit = resultLimit
     }
 }
