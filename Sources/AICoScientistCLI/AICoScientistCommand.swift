@@ -61,9 +61,17 @@ struct AICoScientistCommand: AsyncParsableCommand {
     @Option(help: "Resume a saved run (JSON path): continue refinement, skipping generation.")
     var resumePath: String?
 
+    @Option(name: .customLong("download"),
+        help: "Download + cache a model for offline use (catalog key or HF repo id), then exit. Repeatable.")
+    var download: [String] = []
+
     mutating func run() async throws {
         if listModels {
             Self.printCatalog()
+            return
+        }
+        if !download.isEmpty {
+            try await downloadModelsAndExit()
             return
         }
         if listRemoteModels {
@@ -83,6 +91,23 @@ struct AICoScientistCommand: AsyncParsableCommand {
             try await runWorkflow()
         } else {
             print("Pass --run for the full workflow, or --probe for a single sample.")
+        }
+    }
+
+    /// Prefetch + cache one or more models for offline use, printing progress, then exit.
+    private func downloadModelsAndExit() async throws {
+        for key in download {
+            let name = ModelCatalog.model(key: key)?.displayName ?? key
+            print("Downloading \(name) (\(key))…")
+            do {
+                try await ModelDownloader.download(key) { fraction in
+                    print("\r  \(Int(fraction * 100))%", terminator: "")
+                    fflush(stdout)
+                }
+                print("\r  ✓ cached.   ")
+            } catch {
+                print("\r  ✗ failed: \(error)")
+            }
         }
     }
 
