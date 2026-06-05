@@ -41,6 +41,25 @@ struct StudiesView: View {
                         description: Text("Create a study to start."))
                 }
             }
+            // Toolbar lives on the SIDEBAR list (not the split view) so New Study / Export /
+            // Settings appear in the Studies column on iPad's two-column layout, not on the
+            // empty detail column where they'd vanish.
+            .toolbar {
+                ToolbarItemGroup(placement: toolbarPlacement) {
+                    Button(action: newStudy) { Label("New Study", systemImage: "plus") }
+                    #if os(macOS)
+                        Button(action: importStudy) {
+                            Label("Import", systemImage: "square.and.arrow.down")
+                        }
+                    #endif
+                    Button { if let selection { export(selection) } }
+                        label: { Label("Export", systemImage: "square.and.arrow.up") }
+                        .disabled(selection == nil)
+                    #if os(iOS)
+                        Button { showSettings = true } label: { Label("Settings", systemImage: "gear") }
+                    #endif
+                }
+            }
         } detail: {
             if let selection {
                 StudyDetailView(study: selection, runner: runner)
@@ -48,22 +67,6 @@ struct StudiesView: View {
                 ContentUnavailableView(
                     "No study selected", systemImage: "sidebar.left",
                     description: Text("Create a study or pick one from the sidebar."))
-            }
-        }
-        .toolbar {
-            ToolbarItemGroup {
-                Button(action: newStudy) { Label("New Study", systemImage: "plus") }
-                #if os(macOS)
-                    Button(action: importStudy) {
-                        Label("Import", systemImage: "square.and.arrow.down")
-                    }
-                #endif
-                Button { if let selection { export(selection) } }
-                    label: { Label("Export", systemImage: "square.and.arrow.up") }
-                    .disabled(selection == nil)
-                #if os(iOS)
-                    Button { showSettings = true } label: { Label("Settings", systemImage: "gear") }
-                #endif
             }
         }
         .alert("Rename study", isPresented: .constant(renaming != nil), presenting: renaming) { study in
@@ -87,6 +90,15 @@ struct StudiesView: View {
                         }
                 }
             }
+        #endif
+    }
+
+    /// Sidebar toolbar placement: the top-bar trailing on iOS/iPadOS, the window toolbar on macOS.
+    private var toolbarPlacement: ToolbarItemPlacement {
+        #if os(iOS)
+            .topBarTrailing
+        #else
+            .automatic
         #endif
     }
 
