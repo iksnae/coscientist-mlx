@@ -1,5 +1,5 @@
 {
-  "originHash" : "249d3c8acc5c3acb51cd939d036c06370be589ea7ff5744e25206f73ea8c754d",
+  "originHash" : "1d55c739e0fe2fb44956268cb1529127691a4a01384fcd083986248ad04c25ee",
   "pins" : [
     {
       "identity" : "eventsource",
@@ -8,15 +8,6 @@
       "state" : {
         "revision" : "a3a85a85214caf642abaa96ae664e4c772a59f6e",
         "version" : "1.4.1"
-      }
-    },
-    {
-      "identity" : "grape",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftgraphs/Grape",
-      "state" : {
-        "revision" : "48eb7d8ab4ce549c6cdde106b5f7fa317421364c",
-        "version" : "1.1.0"
       }
     },
     {
