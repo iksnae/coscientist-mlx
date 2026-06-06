@@ -36,28 +36,28 @@
     "roles": [
       {
         "name": "planner",
-        "provider": "fake",
-        "model": "foreman-fake-model"
+        "provider": "deepseek",
+        "model": "deepseek-v4-pro"
       },
       {
         "name": "builder",
-        "provider": "fake",
-        "model": "foreman-fake-model"
+        "provider": "deepseek",
+        "model": "deepseek-v4-pro"
       },
       {
         "name": "reviewer",
-        "provider": "fake",
-        "model": "foreman-fake-model"
+        "provider": "deepseek",
+        "model": "deepseek-v4-pro"
       },
       {
         "name": "product",
-        "provider": "fake",
-        "model": "foreman-fake-model"
+        "provider": "deepseek",
+        "model": "deepseek-v4-pro"
       },
       {
         "name": "designer",
-        "provider": "fake",
-        "model": "foreman-fake-model"
+        "provider": "deepseek",
+        "model": "deepseek-v4-pro"
       }
     ],
     "reviewGates": [
