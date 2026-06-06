@@ -140,11 +140,9 @@ struct StudyDetailView: View {
             TextField("Untitled study", text: $study.title)
                 .font(.title2.weight(.semibold)).textFieldStyle(.plain).disabled(live)
                 .onChange(of: study.title) { _, newTitle in
-                    // Mark the title custom once it diverges from what the goal would derive,
-                    // so it stops auto-tracking the goal.
-                    if newTitle != StudyConfig.defaultTitle(forGoal: study.goal) {
-                        study.titleIsCustom = true
-                    }
+                    // The title is "custom" only when non-empty and divergent from the goal-derived
+                    // default; clearing it resumes goal-tracking (no more stuck "Untitled study").
+                    study.titleIsCustom = StudyTitle.isCustom(editedTitle: newTitle, goal: study.goal)
                     study.updatedAt = Date(); try? context.save()
                 }
             TextField("Research goal — what should the agents investigate?",
