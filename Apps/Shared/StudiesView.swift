@@ -176,12 +176,8 @@ private struct StudyRow: View {
     }
 
     private var color: Color {
-        if running { return .blue }
-        switch study.status {
-        case .done: return .green
-        case .error: return .red
-        case .running: return .blue
-        case .draft: return .secondary
-        }
+        running
+            ? Theme.status.color(for: .running)
+            : Theme.status.color(for: study.status)
     }
 }
