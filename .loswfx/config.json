@@ -319,7 +319,7 @@
     "defaultFormat": "text"
   },
   "skills": {
-    "path": "/Users/khaos/Projects/loswfx/skills"
+    "path": ".loswfx/skills"
   },
   "shadow": {},
   "cost": {},
