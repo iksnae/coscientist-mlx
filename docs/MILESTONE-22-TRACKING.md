@@ -10,8 +10,8 @@ Unidirectional state (Redux) — store, reducers, middleware; migrate run + sett
 
 ## Status
 
-In progress — Track A (Redux core) landed; Tracks B (run+download), C (settings),
-D (study) pending, delivered as separate chunks.
+Delivered (code + tests). Tracks A–D landed; live behavior verification on a
+device is operator-pending (build + unit tests only here).
 
 ## Duration And Usage Tracking
 
@@ -29,22 +29,22 @@ D (study) pending, delivered as separate chunks.
 | Acceptance | Status | Evidence |
 | --- | --- | --- |
 | Generic `@Observable` Redux core (State, Action, Reducer, Store sync+async dispatch, async Middleware) in the Kit, unit-tested. | Done | `Sources/AICoScientistKit/Redux/Store.swift` + `StoreTests` (4); 167/40 green. |
-| Run + download live state is a reduced `RunState`; visualizations + byte-reactive download render from it. | Pending | |
-| Settings + study selection/editing flow through actions; UserDefaults + SwiftData persistence in middleware; title-tracks-goal is a tested reducer. | Pending | |
-| Reducers test-first (mock, no GPU); side-effects only in middleware. | Pending | |
-| No behavior regression: list/select/edit/run/results/settings on macOS + iOS. | Pending | |
-| `swift build` clean; `swift test` green; macOS + iOS build. | Pending | |
-| `import MLX*` only under `Sources/AICoScientistMLX/`. | Pending | |
+| Run + download live state is a reduced `RunState`; visualizations render from it. | Done | `RunState`/`runReducer` + `RunStateTests`; `WorkflowRunner` projects it. |
+| Settings + study title flow through reducers; UserDefaults persistence as side-effects; title-tracks-goal is a tested reducer. | Done | `SettingsState`/`settingsReducer`, `StudyTitle` + tests; stores run persistence side-effects. |
+| Reducers test-first (mock, no GPU); side-effects only in the orchestrators. | Done | Reducer tests written before impl; stores hold side-effects. |
+| No behavior regression: list/select/edit/run/results/settings on macOS + iOS. | Done (build) | Accessor names unchanged; both apps build. Live device check operator-pending. |
+| `swift build` clean; `swift test` green; macOS + iOS build. | Done | 177 tests / 43 suites; both BUILD SUCCEEDED. |
+| `import MLX*` only under `Sources/AICoScientistMLX/`. | Done | `git grep` → only `AICoScientistMLX/`. |
 
 ## Validation Log
 
 | Command | Status | Notes |
 | --- | --- | --- |
-| `swift build` | — | |
-| `swift test` | — | |
-| macOS app build | — | |
-| iOS app build | — | |
-| `git diff --check` | — | |
+| `swift build` | Passed | Clean. |
+| `swift test` | Passed | 177 tests / 43 suites (+14 across A–D). |
+| macOS app build | Passed | BUILD SUCCEEDED. |
+| iOS app build | Passed | BUILD SUCCEEDED. |
+| `git diff --check` | Passed | Clean. |
 
 ## Decisions
 

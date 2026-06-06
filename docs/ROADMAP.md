@@ -139,6 +139,14 @@ at planning time.
   Bonjour, reusing the M7 seam), drafted as M19. See
   `docs/SPIKE-distributed-compute.md`, `docs/MILESTONE-18-CLOSEOUT.md`.
 
+- **M22 — Unidirectional state (Redux).** A pure `@Observable` Redux core
+  (Store/Reducer/Middleware) in the Kit, plus reduced `RunState`,
+  `SettingsState`, and `StudyTitle` logic — all unit-tested. `WorkflowRunner`/
+  `SettingsStore` project the reduced state via unchanged accessors;
+  title-tracks-goal moved to a tested reducer (fixed the "Untitled study"
+  bug). SwiftData stays the persistence/read model; live device verification
+  operator-pending. See `docs/MILESTONE-22-CLOSEOUT.md`.
+
 ### Shipped post-M5 as feature PRs (pre-loop)
 
 Delivered ad-hoc before the milestone loop was adopted; folded into the

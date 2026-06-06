@@ -17,6 +17,15 @@ and on iPhone. M0–M7 landed.
 
 ## Last shipped
 
+- **M22 — Unidirectional state (Redux).** Pure `@Observable` Redux core
+  (Store/Reducer/Middleware) in the Kit + reduced `RunState`, `SettingsState`,
+  `StudyTitle` (all unit-tested); `WorkflowRunner`/`SettingsStore` project the
+  reduced state via unchanged accessors (views untouched); title-tracks-goal
+  is now a tested reducer (fixed the "Untitled study" bug). 177 tests / 43
+  suites; macOS + iOS build. Live device check operator-pending. Also shipped
+  recently as feature PRs: multi-indicator run progress + collapsible config
+  (#72), the brand image set + app icon (#65), CLI `--download` (#69),
+  Settings model download/delete (#68). See `docs/MILESTONE-22-CLOSEOUT.md`.
 - **M21 — Professional UI redesign.** Differentiated sidebar (title
   auto-tracks the goal until renamed); pickers show the selected model + a
   concise per-choice caption (strengths in menu items); synthesis-led
