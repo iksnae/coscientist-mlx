@@ -74,7 +74,12 @@ struct StudiesView: View {
             Button("Cancel", role: .cancel) { renaming = nil }
             Button("Save") {
                 let trimmed = renameText.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty { study.title = trimmed; study.updatedAt = Date(); try? context.save() }
+                if !trimmed.isEmpty {
+                    study.title = trimmed
+                    study.titleIsCustom = true  // an explicit rename is user-set
+                    study.updatedAt = Date()
+                    try? context.save()
+                }
                 renaming = nil
             }
         }
@@ -154,7 +159,7 @@ private struct StudyRow: View {
         HStack(spacing: 8) {
             statusDot
             VStack(alignment: .leading, spacing: 1) {
-                Text(study.title.isEmpty ? "Untitled study" : study.title)
+                Text(StudyTitle.display(title: study.title, goal: study.goal))
                     .lineLimit(1)
                 Text(study.updatedAt, format: .relative(presentation: .named))
                     .font(.caption2).foregroundStyle(.secondary)
