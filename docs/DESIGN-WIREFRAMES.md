@@ -122,6 +122,8 @@ Annotations:
             +--------------------------------------------------+
             |  Cancel            Configure              Run ►  |
             +--------------------------------------------------+
+            |  NAME                                            |
+            |  [ Coffee Consumption Benefits                ]  |  ← Study title; auto-tracks the Goal's first line until edited (StudyTitle, M22)
             |  GOAL                                            |
             |  [ Benefits of coffee consumption…            ]  |  ← multiline TextEditor
             |                                                  |
@@ -139,6 +141,9 @@ Annotations:
             |      Tournament rounds / hyp   [ − ] 3 [ ＋ ]    |
             +--------------------------------------------------+
 ```
+- **Name (title)** leads the sheet. It auto-tracks the Goal's first line until the
+  user edits it (the `StudyTitle` rule), then stays independent. The same title is
+  shown/edited inline in the Results header — both bind to `study.title`.
 - Form/grouped sections. Picker rows show the **selected model + one caption**.
 - "Run ►" dismisses the sheet and starts the run (study returns to live state).
 - iPhone: full-height sheet; iPad/macOS: medium sheet or popover from [Edit].
