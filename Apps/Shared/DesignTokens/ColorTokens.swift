@@ -45,6 +45,12 @@ enum ColorTokens {
     /// Warning / attention / pending state.
     static let warning       = amber
 
+    /// Success background — subtle teal tint for positive-outcome banners.
+    static let successBackground = teal.opacity(0.06)
+
+    /// Warning background — subtle amber tint for warning/issue banners.
+    static let warningBackground = amber.opacity(0.08)
+
     /// Primary body text.
     static let textPrimary   = offWhite
 

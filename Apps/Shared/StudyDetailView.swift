@@ -77,59 +77,59 @@ struct StudyDetailView: View {
     @ViewBuilder private var outcomeHeader: some View {
         if !live, let conclusion = study.snapshot?.conclusion, conclusion.hasResult,
             let top = conclusion.topHypothesis {
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: Theme.space.Spacing.sm) {
                 HStack(spacing: 6) {
-                    Image(systemName: "checkmark.seal.fill").foregroundStyle(.green)
-                    Text("Conclusion").font(.headline)
+                    Image(systemName: "checkmark.seal.fill").foregroundStyle(Theme.color.success)
+                    Text("Conclusion").font(Theme.text.headline)
                     Spacer()
                     if let elo = conclusion.topElo {
-                        Text("top Elo \(elo)").font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                        Text("top Elo \(elo)").font(Theme.text.caption.monospacedDigit())
+                            .foregroundStyle(Theme.color.textSecondary)
                     }
                 }
                 // Synthesis leads (the understanding across hypotheses); falls back to the top
                 // hypothesis only when there's no separate synthesis.
                 Text(conclusion.synthesis.isEmpty ? top : conclusion.synthesis)
-                    .font(.title3.weight(.semibold)).textSelection(.enabled)
+                    .font(Theme.text.title3.weight(.semibold)).textSelection(.enabled)
 
                 if !conclusion.synthesis.isEmpty {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("TOP HYPOTHESIS").font(.caption2.bold()).foregroundStyle(.secondary)
-                        Text(top).font(.callout).foregroundStyle(.secondary)
+                        Text("TOP HYPOTHESIS").font(Theme.text.caption2.bold()).foregroundStyle(Theme.color.textSecondary)
+                        Text(top).font(Theme.text.callout).foregroundStyle(Theme.color.textSecondary)
                             .lineLimit(topHypothesisExpanded ? nil : 3).textSelection(.enabled)
                         Button(topHypothesisExpanded ? "Show less" : "Show more") {
                             withAnimation { topHypothesisExpanded.toggle() }
                         }
-                        .font(.caption).buttonStyle(.plain).foregroundStyle(.tint)
+                        .font(Theme.text.caption).buttonStyle(.plain).foregroundStyle(Theme.color.accent)
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal).padding(.vertical, 12)
-            .background(.green.opacity(0.06))
+            .background(Theme.color.successBackground)
         }
     }
 
     /// Surfaces errors recorded during a finished run, so a failed/empty run isn't silent.
     @ViewBuilder private var issuesBanner: some View {
         if !live, let errors = study.snapshot?.errors, !errors.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: Theme.space.Spacing.xs) {
                 Label(
                     "\(RunStatusText.count(errors.count, "issue", "issues")) during the run",
                     systemImage: "exclamationmark.triangle.fill")
-                    .font(.subheadline.bold()).foregroundStyle(.orange)
+                    .font(Theme.text.subheadline.bold()).foregroundStyle(Theme.color.warning)
                 ForEach(Array(errors.prefix(6).enumerated()), id: \.offset) { _, message in
-                    Text(message).font(.caption.monospaced()).foregroundStyle(.secondary)
+                    Text(message).font(Theme.text.caption.monospaced()).foregroundStyle(Theme.color.textSecondary)
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 if errors.count > 6 {
-                    Text("…and \(errors.count - 6) more").font(.caption).foregroundStyle(.secondary)
+                    Text("…and \(errors.count - 6) more").font(Theme.text.caption).foregroundStyle(Theme.color.textSecondary)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal).padding(.vertical, 8)
-            .background(.orange.opacity(0.08))
+            .padding(.horizontal).padding(.vertical, Theme.space.Spacing.sm)
+            .background(Theme.color.warningBackground)
         }
     }
 

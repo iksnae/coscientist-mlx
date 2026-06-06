@@ -21,6 +21,9 @@ enum TypographyTokens {
     /// Callout — slightly-emphasised secondary text.
     static let callout = Font.callout
 
+    /// Subheadline — secondary heading text.
+    static let subheadline = Font.subheadline
+
     /// Body — default reading size.
     static let body = Font.body
 
