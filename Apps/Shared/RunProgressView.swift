@@ -11,11 +11,11 @@ struct RunProgressView: View {
     private var currentStage: Int? { RunPipeline.stageIndex(forPhase: runner.phase) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: Theme.space.Spacing.md) {
             breadcrumb
-            HStack(alignment: .center, spacing: 18) {
+            HStack(alignment: .center, spacing: Theme.space.Spacing.md) {
                 phaseRing
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: Theme.space.Spacing.sm) {
                     iterationRow
                     poolRow
                 }
@@ -23,7 +23,9 @@ struct RunProgressView: View {
                 sparkline
             }
             if !runner.status.isEmpty {
-                Text(runner.status).font(.caption).foregroundStyle(.secondary)
+                Text(runner.status)
+                    .font(Theme.text.caption)
+                    .foregroundStyle(Theme.color.textSecondary)
             }
         }
         .animation(.easeOut(duration: 0.35), value: runner.phase)
@@ -39,26 +41,31 @@ struct RunProgressView: View {
     }
 
     private var breadcrumb: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 3) {
+        VStack(alignment: .leading, spacing: Theme.space.Spacing.xs) {
+            HStack(spacing: Theme.space.Spacing.xs) {
                 ForEach(Array(RunPipeline.stages.enumerated()), id: \.offset) { idx, _ in
                     Capsule()
                         .fill(segmentColor(state(idx)))
                         .frame(height: 5)
                 }
             }
-            HStack(spacing: 6) {
+            HStack(spacing: Theme.space.Spacing.sm) {
                 if let cur = currentStage {
                     Text(RunPipeline.displayName(RunPipeline.stages[cur]).uppercased())
-                        .font(.caption2.bold().monospaced()).foregroundStyle(.tint)
+                        .font(Theme.text.caption2.bold().monospaced())
+                        .foregroundStyle(Theme.color.accent)
                     Text("stage \(cur + 1) of \(RunPipeline.stages.count)")
-                        .font(.caption2).foregroundStyle(.secondary)
+                        .font(Theme.text.caption2)
+                        .foregroundStyle(Theme.color.textSecondary)
                 } else if !runner.phase.isEmpty {
                     Text(runner.phase.uppercased())
-                        .font(.caption2.bold().monospaced()).foregroundStyle(.secondary)
+                        .font(Theme.text.caption2.bold().monospaced())
+                        .foregroundStyle(Theme.color.textSecondary)
                 }
                 if !runner.detail.isEmpty {
-                    Text("· \(runner.detail)").font(.caption2).foregroundStyle(.secondary)
+                    Text("· \(runner.detail)")
+                        .font(Theme.text.caption2)
+                        .foregroundStyle(Theme.color.textSecondary)
                         .lineLimit(1)
                 }
             }
@@ -67,9 +74,9 @@ struct RunProgressView: View {
 
     private func segmentColor(_ s: StageState) -> Color {
         switch s {
-        case .done: Color.accentColor.opacity(0.55)
-        case .current: Color.accentColor
-        case .upcoming: Color.secondary.opacity(0.2)
+        case .done:    Theme.color.accent.opacity(0.55)
+        case .current: Theme.color.accent
+        case .upcoming: Theme.color.textSecondary.opacity(0.2)
         }
     }
 
@@ -77,17 +84,21 @@ struct RunProgressView: View {
 
     private var phaseRing: some View {
         ZStack {
-            Circle().stroke(Color.secondary.opacity(0.18), lineWidth: 5)
+            Circle()
+                .stroke(Theme.color.textSecondary.opacity(0.18), lineWidth: 5)
             Circle()
                 .trim(from: 0, to: runner.phaseFraction ?? 0)
-                .stroke(.tint, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .stroke(Theme.color.accent,
+                        style: StrokeStyle(lineWidth: 5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.easeOut(duration: 0.3), value: runner.phaseFraction ?? 0)
             if runner.total > 0 {
                 Text("\(runner.completed)/\(runner.total)")
-                    .font(.caption2.monospacedDigit().bold())
+                    .font(Theme.text.caption2.monospacedDigit().bold())
             } else {
-                Image(systemName: "ellipsis").font(.caption).foregroundStyle(.secondary)
+                Image(systemName: "ellipsis")
+                    .font(Theme.text.caption)
+                    .foregroundStyle(Theme.color.textSecondary)
             }
         }
         .frame(width: 46, height: 46)
@@ -96,8 +107,9 @@ struct RunProgressView: View {
     // MARK: Iteration + pool
 
     private var iterationRow: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text(iterationLabel).font(.caption.weight(.medium))
+        VStack(alignment: .leading, spacing: Theme.space.Spacing.xs) {
+            Text(iterationLabel)
+                .font(Theme.text.caption.weight(.medium))
             if runner.maxIterations > 0 {
                 ProgressView(value: Double(runner.iteration), total: Double(runner.maxIterations))
                     .frame(width: 130)
@@ -112,7 +124,8 @@ struct RunProgressView: View {
 
     private var poolRow: some View {
         Label("\(runner.hypotheses.count) hypotheses", systemImage: "flask")
-            .font(.caption).foregroundStyle(.secondary)
+            .font(Theme.text.caption)
+            .foregroundStyle(Theme.color.textSecondary)
     }
 
     // MARK: Elo sparkline
@@ -120,16 +133,18 @@ struct RunProgressView: View {
     @ViewBuilder private var sparkline: some View {
         let points = runner.timeline
         if points.count > 1 {
-            VStack(alignment: .trailing, spacing: 2) {
+            VStack(alignment: .trailing, spacing: Theme.space.Spacing.xs) {
                 Chart(points) { p in
                     LineMark(x: .value("step", p.step), y: .value("elo", p.topElo))
                         .interpolationMethod(.monotone)
-                        .foregroundStyle(.tint)
+                        .foregroundStyle(Theme.color.accent)
                 }
                 .frame(width: 96, height: 30)
                 .chartXAxis(.hidden).chartYAxis(.hidden)
                 if let top = points.last?.topElo {
-                    Text("top Elo \(top)").font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                    Text("top Elo \(top)")
+                        .font(Theme.text.caption2.monospacedDigit())
+                        .foregroundStyle(Theme.color.textSecondary)
                 }
             }
         }
